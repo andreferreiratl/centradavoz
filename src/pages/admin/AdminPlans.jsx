@@ -15,7 +15,7 @@ export default function AdminPlans() {
   const [editingPlan, setEditingPlan] = useState(null);
   const [form, setForm] = useState({
     name: "", price: "", character_limit: "", duration_days: "30",
-    duration_label: "mensal", benefits: "", is_active: true, sort_order: 0,
+    duration_label: "mensal", benefits: "", payment_link: "", is_active: true, sort_order: 0,
   });
 
   useEffect(() => { loadPlans(); }, []);
@@ -28,7 +28,7 @@ export default function AdminPlans() {
 
   const openNew = () => {
     setEditingPlan(null);
-    setForm({ name: "", price: "", character_limit: "", duration_days: "30", duration_label: "mensal", benefits: "", is_active: true, sort_order: 0 });
+    setForm({ name: "", price: "", character_limit: "", duration_days: "30", duration_label: "mensal", benefits: "", payment_link: "", is_active: true, sort_order: 0 });
     setDialog(true);
   };
 
@@ -41,6 +41,7 @@ export default function AdminPlans() {
       duration_days: plan.duration_days,
       duration_label: plan.duration_label || "mensal",
       benefits: (plan.benefits || []).join("\n"),
+      payment_link: plan.payment_link || "",
       is_active: plan.is_active !== false,
       sort_order: plan.sort_order || 0,
     });
@@ -55,6 +56,7 @@ export default function AdminPlans() {
       duration_days: Number(form.duration_days),
       duration_label: form.duration_label,
       benefits: form.benefits.split("\n").filter(b => b.trim()),
+      payment_link: form.payment_link,
       is_active: form.is_active,
       sort_order: Number(form.sort_order),
     };
@@ -110,6 +112,9 @@ export default function AdminPlans() {
                   <span>{plan.character_limit?.toLocaleString()} chars</span>
                   <span>{plan.duration_days} dias</span>
                 </div>
+                {plan.payment_link && (
+                  <p className="text-[10px] text-secondary mt-0.5 truncate max-w-xs">{plan.payment_link}</p>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={() => openEdit(plan)} className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors">
@@ -176,6 +181,10 @@ export default function AdminPlans() {
                 onChange={(e) => setForm(f => ({ ...f, benefits: e.target.value }))}
                 className="w-full bg-muted border border-border rounded-lg p-2 text-sm min-h-[80px] outline-none"
               />
+            </div>
+            <div>
+              <Label className="text-xs">Link de Pagamento (Stripe ou outro)</Label>
+              <Input value={form.payment_link} onChange={(e) => setForm(f => ({ ...f, payment_link: e.target.value }))} placeholder="https://buy.stripe.com/..." className="bg-muted border-border" />
             </div>
             <div className="flex items-center gap-3">
               <Switch checked={form.is_active} onCheckedChange={(v) => setForm(f => ({ ...f, is_active: v }))} />

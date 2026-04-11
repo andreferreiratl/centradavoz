@@ -82,7 +82,7 @@ export default function Plans() {
             </div>
 
             <a
-              href={`https://wa.me/5567991488814?text=Olá! Gostaria de assinar o plano ${plan.name}`}
+              href={plan.payment_link || `https://wa.me/5567991488814?text=Olá! Gostaria de assinar o plano ${plan.name}`}
               target="_blank"
               rel="noopener noreferrer"
               className="block"
