@@ -107,20 +107,34 @@ export default function GenerateAudio() {
       } else {
         // Mapear emoção → parâmetros ElevenLabs
         const emotionMap = {
-          alegre: { stability: 0.35, similarity_boost: 0.75, style: 0.6 },
-          animado: { stability: 0.3, similarity_boost: 0.75, style: 0.7 },
-          entusiasmado: { stability: 0.3, similarity_boost: 0.75, style: 0.7 },
-          emocional: { stability: 0.25, similarity_boost: 0.8, style: 0.8 },
-          dramático: { stability: 0.2, similarity_boost: 0.8, style: 0.85 },
-          triste: { stability: 0.4, similarity_boost: 0.75, style: 0.5 },
-          calmo: { stability: 0.65, similarity_boost: 0.75, style: 0.2 },
-          suave: { stability: 0.6, similarity_boost: 0.75, style: 0.2 },
-          sério: { stability: 0.7, similarity_boost: 0.75, style: 0.1 },
-          profissional: { stability: 0.7, similarity_boost: 0.8, style: 0.1 },
-          neutro: { stability: 0.5, similarity_boost: 0.75, style: 0.0 },
+          alegre:        { stability: 0.25, similarity_boost: 0.85, style: 0.75, use_speaker_boost: true },
+          animado:       { stability: 0.20, similarity_boost: 0.85, style: 0.80, use_speaker_boost: true },
+          entusiasmado:  { stability: 0.18, similarity_boost: 0.85, style: 0.85, use_speaker_boost: true },
+          emocional:     { stability: 0.20, similarity_boost: 0.90, style: 0.85, use_speaker_boost: true },
+          dramático:     { stability: 0.15, similarity_boost: 0.90, style: 0.90, use_speaker_boost: true },
+          triste:        { stability: 0.35, similarity_boost: 0.80, style: 0.60, use_speaker_boost: true },
+          calmo:         { stability: 0.60, similarity_boost: 0.75, style: 0.25, use_speaker_boost: true },
+          suave:         { stability: 0.55, similarity_boost: 0.75, style: 0.25, use_speaker_boost: true },
+          sério:         { stability: 0.65, similarity_boost: 0.80, style: 0.15, use_speaker_boost: true },
+          profissional:  { stability: 0.65, similarity_boost: 0.85, style: 0.15, use_speaker_boost: true },
+          neutro:        { stability: 0.50, similarity_boost: 0.75, style: 0.00, use_speaker_boost: false },
+          urgente:       { stability: 0.20, similarity_boost: 0.85, style: 0.80, use_speaker_boost: true },
+          empolgante:    { stability: 0.18, similarity_boost: 0.85, style: 0.85, use_speaker_boost: true },
         };
         const emotion = voiceStyle?.emotion?.toLowerCase() || "";
-        const voiceSettings = emotionMap[emotion] || { stability: 0.5, similarity_boost: 0.75, style: 0.3 };
+        const voiceSettings = emotionMap[emotion] || { stability: 0.40, similarity_boost: 0.80, style: 0.45, use_speaker_boost: true };
+
+        // Construir stage direction para o ElevenLabs entender a emoção
+        const stageDirectionParts = [];
+        if (voiceStyle?.emotion) stageDirectionParts.push(voiceStyle.emotion);
+        if (voiceStyle?.tone) stageDirectionParts.push(voiceStyle.tone);
+        if (voiceStyle?.rhythm) stageDirectionParts.push(voiceStyle.rhythm);
+        if (voiceStyle?.description) stageDirectionParts.push(voiceStyle.description);
+
+        // Texto enriquecido: stage direction no início guia a emoção do modelo
+        const enrichedText = stageDirectionParts.length > 0
+          ? `(${stageDirectionParts.join(", ")}) ${text}`
+          : text;
 
         const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice.voice_id}`, {
           method: "POST",
@@ -130,8 +144,8 @@ export default function GenerateAudio() {
             "Accept": "audio/mpeg"
           },
           body: JSON.stringify({
-            text,
-            model_id: "eleven_multilingual_v2",
+            text: enrichedText,
+            model_id: "eleven_turbo_v2_5",
             voice_settings: voiceSettings
           })
         });
