@@ -68,7 +68,7 @@ export default function Landing() {
             transition={{ duration: 0.8, delay: 0.3 }}
           >
             <img 
-              src="/__generating__/img_47ac7fa0f871.png"
+              src="https://media.base44.com/images/public/69da50375cc9660ed0fab63a/4053f24be_generated_c4ce27f7.png"
               alt="VozPro AI - Visualização de áudio gerado por inteligência artificial"
               className="w-full rounded-2xl glow-primary"
             />
