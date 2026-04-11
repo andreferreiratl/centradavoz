@@ -1,0 +1,22 @@
+{
+  "name": "SystemConfig",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "title": "Chave"
+    },
+    "value": {
+      "type": "string",
+      "title": "Valor"
+    },
+    "description": {
+      "type": "string",
+      "title": "Descri\u00e7\u00e3o"
+    }
+  },
+  "required": [
+    "key",
+    "value"
+  ]
+}

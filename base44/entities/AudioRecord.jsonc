@@ -1,0 +1,49 @@
+{
+  "name": "AudioRecord",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "title": "Email do Usu\u00e1rio"
+    },
+    "text": {
+      "type": "string",
+      "title": "Texto"
+    },
+    "character_count": {
+      "type": "number",
+      "title": "Qtd. Caracteres"
+    },
+    "voice_style": {
+      "type": "string",
+      "title": "Estilo de Voz"
+    },
+    "voice_gender": {
+      "type": "string",
+      "title": "G\u00eanero da Voz",
+      "enum": [
+        "masculina",
+        "feminina"
+      ]
+    },
+    "audio_url": {
+      "type": "string",
+      "title": "URL do \u00c1udio"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "processing",
+        "completed",
+        "failed"
+      ],
+      "default": "processing"
+    }
+  },
+  "required": [
+    "user_email",
+    "text",
+    "character_count"
+  ]
+}

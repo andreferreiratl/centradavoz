@@ -5,7 +5,24 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-// Add page imports here
+// Layouts
+import UserLayout from './components/UserLayout';
+import AdminLayout from './components/AdminLayout';
+// User Pages
+import Landing from './pages/Landing';
+import Dashboard from './pages/Dashboard';
+import VoiceAssistant from './pages/VoiceAssistant';
+import GenerateAudio from './pages/GenerateAudio';
+import Library from './pages/Library';
+import Plans from './pages/Plans';
+// Admin Pages
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminPlans from './pages/admin/AdminPlans';
+import AdminSubscriptions from './pages/admin/AdminSubscriptions';
+import AdminAudios from './pages/admin/AdminAudios';
+import AdminSettings from './pages/admin/AdminSettings';
+import AdminLogs from './pages/admin/AdminLogs';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -33,7 +50,23 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
-      {/* Add your page Route elements here */}
+      <Route path="/" element={<Landing />} />
+      <Route element={<UserLayout />}>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/voice-assistant" element={<VoiceAssistant />} />
+        <Route path="/generate" element={<GenerateAudio />} />
+        <Route path="/library" element={<Library />} />
+        <Route path="/plans" element={<Plans />} />
+      </Route>
+      <Route element={<AdminLayout />}>
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/users" element={<AdminUsers />} />
+        <Route path="/admin/plans" element={<AdminPlans />} />
+        <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
+        <Route path="/admin/audios" element={<AdminAudios />} />
+        <Route path="/admin/settings" element={<AdminSettings />} />
+        <Route path="/admin/logs" element={<AdminLogs />} />
+      </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

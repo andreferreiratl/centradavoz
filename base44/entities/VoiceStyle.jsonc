@@ -1,0 +1,39 @@
+{
+  "name": "VoiceStyle",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "title": "Email do Usu\u00e1rio"
+    },
+    "tone": {
+      "type": "string",
+      "title": "Tom"
+    },
+    "rhythm": {
+      "type": "string",
+      "title": "Ritmo"
+    },
+    "emotion": {
+      "type": "string",
+      "title": "Emo\u00e7\u00e3o"
+    },
+    "style": {
+      "type": "string",
+      "title": "Estilo"
+    },
+    "description": {
+      "type": "string",
+      "title": "Descri\u00e7\u00e3o Completa"
+    },
+    "is_active": {
+      "type": "boolean",
+      "title": "Ativo",
+      "default": true
+    }
+  },
+  "required": [
+    "user_email",
+    "description"
+  ]
+}

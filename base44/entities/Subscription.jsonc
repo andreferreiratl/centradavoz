@@ -1,0 +1,62 @@
+{
+  "name": "Subscription",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "title": "Email do Usu\u00e1rio"
+    },
+    "user_name": {
+      "type": "string",
+      "title": "Nome do Usu\u00e1rio"
+    },
+    "plan_id": {
+      "type": "string",
+      "title": "ID do Plano"
+    },
+    "plan_name": {
+      "type": "string",
+      "title": "Nome do Plano"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "active",
+        "expired",
+        "cancelled",
+        "blocked"
+      ],
+      "default": "active"
+    },
+    "character_limit": {
+      "type": "number",
+      "title": "Limite de Caracteres"
+    },
+    "characters_used": {
+      "type": "number",
+      "title": "Caracteres Utilizados",
+      "default": 0
+    },
+    "start_date": {
+      "type": "string",
+      "title": "Data de In\u00edcio",
+      "format": "date-time"
+    },
+    "expiration_date": {
+      "type": "string",
+      "title": "Data de Expira\u00e7\u00e3o",
+      "format": "date-time"
+    },
+    "price_paid": {
+      "type": "number",
+      "title": "Valor Pago"
+    }
+  },
+  "required": [
+    "user_email",
+    "plan_id",
+    "status",
+    "character_limit"
+  ]
+}
