@@ -105,24 +105,13 @@ export default function GenerateAudio() {
           ? "Chave da API ElevenLabs não configurada. Acesse Admin → Configurações e cadastre ELEVENLABS_API_KEY."
           : "Voice ID não definido para esta voz.";
       } else {
-        // Mapear emoção → parâmetros ElevenLabs
-        const emotionMap = {
-          alegre:        { stability: 0.25, similarity_boost: 0.85, style: 0.75, use_speaker_boost: true },
-          animado:       { stability: 0.20, similarity_boost: 0.85, style: 0.80, use_speaker_boost: true },
-          entusiasmado:  { stability: 0.18, similarity_boost: 0.85, style: 0.85, use_speaker_boost: true },
-          emocional:     { stability: 0.20, similarity_boost: 0.90, style: 0.85, use_speaker_boost: true },
-          dramático:     { stability: 0.15, similarity_boost: 0.90, style: 0.90, use_speaker_boost: true },
-          triste:        { stability: 0.35, similarity_boost: 0.80, style: 0.60, use_speaker_boost: true },
-          calmo:         { stability: 0.60, similarity_boost: 0.75, style: 0.25, use_speaker_boost: true },
-          suave:         { stability: 0.55, similarity_boost: 0.75, style: 0.25, use_speaker_boost: true },
-          sério:         { stability: 0.65, similarity_boost: 0.80, style: 0.15, use_speaker_boost: true },
-          profissional:  { stability: 0.65, similarity_boost: 0.85, style: 0.15, use_speaker_boost: true },
-          neutro:        { stability: 0.50, similarity_boost: 0.75, style: 0.00, use_speaker_boost: false },
-          urgente:       { stability: 0.20, similarity_boost: 0.85, style: 0.80, use_speaker_boost: true },
-          empolgante:    { stability: 0.18, similarity_boost: 0.85, style: 0.85, use_speaker_boost: true },
+        // Configuração fixa de voz conforme painel ElevenLabs
+        const voiceSettings = {
+          stability: 0.62,
+          similarity_boost: 0.57,
+          style: 0.57,
+          use_speaker_boost: true
         };
-        const emotion = voiceStyle?.emotion?.toLowerCase() || "";
-        const voiceSettings = emotionMap[emotion] || { stability: 0.40, similarity_boost: 0.80, style: 0.45, use_speaker_boost: true };
 
         // Construir stage direction para o ElevenLabs entender a emoção
         const stageDirectionParts = [];
@@ -146,7 +135,8 @@ export default function GenerateAudio() {
           body: JSON.stringify({
             text: enrichedText,
             model_id: "eleven_turbo_v2_5",
-            voice_settings: voiceSettings
+            voice_settings: voiceSettings,
+            speed: 1.0
           })
         });
 
