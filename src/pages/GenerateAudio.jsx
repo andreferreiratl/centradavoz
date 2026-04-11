@@ -105,25 +105,39 @@ export default function GenerateAudio() {
           ? "Chave da API ElevenLabs não configurada. Acesse Admin → Configurações e cadastre ELEVENLABS_API_KEY."
           : "Voice ID não definido para esta voz.";
       } else {
-        // Configuração fixa de voz conforme painel ElevenLabs
+        // Parâmetros otimizados para locução de rádio com emoção intensa
         const voiceSettings = {
-          stability: 0.62,
-          similarity_boost: 0.57,
-          style: 0.57,
+          stability: 0.28,        // Baixo = mais expressividade e variação natural de locutor
+          similarity_boost: 0.85, // Alto = fidelidade à voz
+          style: 0.82,            // Alto = exagero de estilo tipo rádio
           use_speaker_boost: true
         };
 
-        // Construir stage direction para o ElevenLabs entender a emoção
-        const stageDirectionParts = [];
-        if (voiceStyle?.emotion) stageDirectionParts.push(voiceStyle.emotion);
-        if (voiceStyle?.tone) stageDirectionParts.push(voiceStyle.tone);
-        if (voiceStyle?.rhythm) stageDirectionParts.push(voiceStyle.rhythm);
-        if (voiceStyle?.description) stageDirectionParts.push(voiceStyle.description);
+        // Stage direction estilo locutor de rádio — instrução emocional direta ao modelo
+        const emotion = voiceStyle?.emotion?.toLowerCase() || "";
+        const tone = voiceStyle?.tone || "";
+        const rhythm = voiceStyle?.rhythm || "";
+        const styleDesc = voiceStyle?.style || "";
+        const description = voiceStyle?.description || "";
 
-        // Texto enriquecido: stage direction no início guia a emoção do modelo
-        const enrichedText = stageDirectionParts.length > 0
-          ? `(${stageDirectionParts.join(", ")}) ${text}`
-          : text;
+        // Montar instrução de rádio: específica, energética, com marcadores que o ElevenLabs responde bem
+        const radioDirectionParts = [
+          "radio announcer",
+          "broadcast quality",
+          "high energy",
+          "enthusiastic",
+          "warm and joyful delivery",
+          "upbeat",
+          "confident",
+          "clear diction",
+        ];
+        if (emotion) radioDirectionParts.push(emotion);
+        if (tone) radioDirectionParts.push(tone);
+        if (rhythm) radioDirectionParts.push(rhythm);
+        if (styleDesc) radioDirectionParts.push(styleDesc);
+        if (description) radioDirectionParts.push(description);
+
+        const enrichedText = `(${radioDirectionParts.join(", ")}) ${text}`;
 
         const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice.voice_id}`, {
           method: "POST",
