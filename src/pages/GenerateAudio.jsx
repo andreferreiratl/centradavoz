@@ -139,7 +139,7 @@ export default function GenerateAudio() {
         if (styleDesc) radioDirectionParts.push(styleDesc);
         if (description) radioDirectionParts.push(description);
 
-        const enrichedText = `(${radioDirectionParts.join(", ")}) ${text}`;
+        const voiceDescription = radioDirectionParts.join(", ");
 
         const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice.voice_id}`, {
           method: "POST",
@@ -149,9 +149,10 @@ export default function GenerateAudio() {
             "Accept": "audio/mpeg"
           },
           body: JSON.stringify({
-            text: enrichedText,
-            model_id: "eleven_multilingual_v2", // Melhor modelo para expressividade emocional e naturalidade
-            voice_settings: voiceSettings
+            text,
+            model_id: "eleven_multilingual_v2",
+            voice_settings: voiceSettings,
+            voice_description: voiceDescription
           })
         });
 
