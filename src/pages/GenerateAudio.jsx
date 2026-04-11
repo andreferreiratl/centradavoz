@@ -12,17 +12,16 @@ export default function GenerateAudio() {
   const [step, setStep] = useState(1);
   const [voices, setVoices] = useState([]);
   const [selectedVoice, setSelectedVoice] = useState(null);
-  const [playingId, setPlayingId] = useState(null);
-  const [text, setText] = useState("");
-  const [generating, setGenerating] = useState(false);
-  const [audioUrl, setAudioUrl] = useState(null);
-  const [audioPlaying, setAudioPlaying] = useState(false);
-  const [error, setError] = useState(null);
-  const generatedAudioRef = useRef(null);
+  const [voiceStyle, setVoiceStyle] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     base44.entities.ElevenLabsVoice.filter({ is_active: true }, "sort_order").then(setVoices);
+    base44.auth.me().then(u => {
+      base44.entities.VoiceStyle.filter({ user_email: u.email, is_active: true }).then(styles => {
+        if (styles.length > 0) setVoiceStyle(styles[0]);
+      });
+    });
   }, []);
 
   const charCount = text.length;
@@ -99,6 +98,23 @@ export default function GenerateAudio() {
           ? "Chave da API ElevenLabs não configurada. Acesse Admin → Configurações e cadastre ELEVENLABS_API_KEY."
           : "Voice ID não definido para esta voz.";
       } else {
+        // Mapear emoção → parâmetros ElevenLabs
+        const emotionMap = {
+          alegre: { stability: 0.35, similarity_boost: 0.75, style: 0.6 },
+          animado: { stability: 0.3, similarity_boost: 0.75, style: 0.7 },
+          entusiasmado: { stability: 0.3, similarity_boost: 0.75, style: 0.7 },
+          emocional: { stability: 0.25, similarity_boost: 0.8, style: 0.8 },
+          dramático: { stability: 0.2, similarity_boost: 0.8, style: 0.85 },
+          triste: { stability: 0.4, similarity_boost: 0.75, style: 0.5 },
+          calmo: { stability: 0.65, similarity_boost: 0.75, style: 0.2 },
+          suave: { stability: 0.6, similarity_boost: 0.75, style: 0.2 },
+          sério: { stability: 0.7, similarity_boost: 0.75, style: 0.1 },
+          profissional: { stability: 0.7, similarity_boost: 0.8, style: 0.1 },
+          neutro: { stability: 0.5, similarity_boost: 0.75, style: 0.0 },
+        };
+        const emotion = voiceStyle?.emotion?.toLowerCase() || "";
+        const voiceSettings = emotionMap[emotion] || { stability: 0.5, similarity_boost: 0.75, style: 0.3 };
+
         const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice.voice_id}`, {
           method: "POST",
           headers: {
@@ -109,7 +125,7 @@ export default function GenerateAudio() {
           body: JSON.stringify({
             text,
             model_id: "eleven_multilingual_v2",
-            voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+            voice_settings: voiceSettings
           })
         });
 
@@ -213,6 +229,25 @@ export default function GenerateAudio() {
       {step === 1 && (
         <div>
           <p className="text-sm text-muted-foreground mb-4">Ouça o preview e escolha a voz ideal para seu projeto</p>
+
+          {/* Voice Style Badge */}
+          {voiceStyle ? (
+            <div className="glass-card rounded-xl p-3 mb-4 border-secondary/30 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-secondary font-semibold">Estilo Ativo</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {[voiceStyle.tone, voiceStyle.rhythm, voiceStyle.emotion].filter(Boolean).join(" · ")}
+                </p>
+              </div>
+              <Link to="/voice-assistant" className="text-xs text-primary hover:underline">Alterar</Link>
+            </div>
+          ) : (
+            <div className="glass-card rounded-xl p-3 mb-4 border-yellow-500/20 bg-yellow-500/5 flex items-center justify-between">
+              <p className="text-xs text-yellow-400">Nenhum estilo definido — emoção padrão será usada</p>
+              <Link to="/voice-assistant" className="text-xs text-secondary hover:underline">Definir</Link>
+            </div>
+          )}
+
           {voices.length === 0 ? (
             <div className="text-center py-16 glass-card rounded-2xl">
               <Mic className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
