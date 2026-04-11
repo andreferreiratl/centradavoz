@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Check, Zap, MessageCircle } from "lucide-react";
+import Logo from "../components/Logo";
 import { base44 } from "@/api/base44Client";
 import GradientButton from "../components/GradientButton";
 import { cn } from "@/lib/utils";
@@ -29,11 +30,14 @@ export default function Plans() {
 
   return (
     <div className="px-4 pt-4 pb-24">
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <h1 className="font-heading text-xl font-bold">Planos</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h1 className="font-heading text-xl font-bold">Planos</h1>
+        </div>
+        <Logo size="sm" />
       </div>
 
       <p className="text-muted-foreground text-sm mb-6">

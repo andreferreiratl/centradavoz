@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Mic, Sparkles, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
+import { ArrowLeft, Mic, Sparkles, Loader2, AlertTriangle, RefreshCw, Download, RotateCcw } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useSubscription } from "../lib/useSubscription";
 import GradientButton from "../components/GradientButton";
 import AudioPlayer from "../components/AudioPlayer";
+import AudioMixer from "../components/AudioMixer";
+import Logo from "../components/Logo";
 import { cn } from "@/lib/utils";
 
 export default function GenerateAudio() {
@@ -101,11 +103,14 @@ Responda com uma confirmação de que o áudio foi gerado com sucesso, descreven
   return (
     <div className="px-4 pt-4 pb-24">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <h1 className="font-heading text-xl font-bold">Gerar Áudio</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h1 className="font-heading text-xl font-bold">Gerar Áudio</h1>
+        </div>
+        <Logo size="sm" />
       </div>
 
       {/* Access Warning */}
@@ -154,7 +159,7 @@ Responda com uma confirmação de que o áudio foi gerado com sucesso, descreven
           <div className="text-center py-3">
             <p className="text-xs text-muted-foreground mb-2">Nenhum estilo definido</p>
             <Link to="/voice-assistant">
-              <GradientButton size="sm">Definir Estilo com IA</GradientButton>
+              <GradientButton size="sm">Definir Estilo de Voz</GradientButton>
             </Link>
           </div>
         )}
@@ -223,14 +228,54 @@ Responda com uma confirmação de que o áudio foi gerado com sucesso, descreven
       {/* Audio Result */}
       {audioUrl && (
         <div className="mt-6">
-          <p className="text-sm font-semibold mb-3 text-secondary">✨ Áudio Gerado com Sucesso!</p>
-          <div className="glass-card rounded-2xl p-4 text-center">
-            <Mic className="w-10 h-10 text-primary mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">Áudio processado com sucesso!</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {charCount} caracteres • Voz {voiceGender}
-            </p>
+          <p className="text-sm font-semibold mb-3 text-secondary">✅ Áudio Gerado com Sucesso!</p>
+          <div className="glass-card rounded-2xl p-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center flex-shrink-0">
+                <Mic className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Áudio processado</p>
+                <p className="text-xs text-muted-foreground">{charCount} caracteres • Voz {voiceGender}</p>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <a
+                href={audioUrl !== "generated" ? audioUrl : "#"}
+                download="audio.mp3"
+                className={cn("flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all",
+                  audioUrl !== "generated"
+                    ? "gradient-primary text-white glow-primary"
+                    : "bg-muted text-muted-foreground cursor-not-allowed"
+                )}
+              >
+                <Download className="w-4 h-4" /> Baixar MP3
+              </a>
+              <a
+                href={audioUrl !== "generated" ? audioUrl : "#"}
+                download="audio.wav"
+                className={cn("flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all",
+                  audioUrl !== "generated"
+                    ? "bg-secondary/10 border border-secondary/30 text-secondary"
+                    : "bg-muted text-muted-foreground cursor-not-allowed"
+                )}
+              >
+                <Download className="w-4 h-4" /> Baixar WAV
+              </a>
+            </div>
+
+            <button
+              onClick={() => { setAudioUrl(null); }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-muted hover:bg-muted/80 text-muted-foreground text-sm font-medium transition-all"
+            >
+              <RotateCcw className="w-4 h-4" /> Gerar Novamente
+            </button>
           </div>
+
+          {/* Mixer */}
+          <AudioMixer generatedAudioUrl={audioUrl} />
         </div>
       )}
     </div>

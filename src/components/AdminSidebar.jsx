@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Users, CreditCard, FileText, AudioLines, Settings, Shield, MessageCircle, X } from "lucide-react";
+import Logo from "./Logo";
 import { cn } from "@/lib/utils";
 
 const menuItems = [
@@ -26,11 +27,8 @@ export default function AdminSidebar({ isOpen, onClose }) {
       )}>
         <div className="flex items-center justify-between p-6">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-              <AudioLines className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-heading font-bold text-lg">Central da Voz</span>
-            <span className="text-xs text-secondary font-semibold bg-secondary/10 px-2 py-0.5 rounded-full">Admin</span>
+            <Logo size="sm" />
+            <span className="text-xs text-secondary font-semibold bg-secondary/10 px-2 py-0.5 rounded-full ml-1">Admin</span>
           </div>
           <button onClick={onClose} className="lg:hidden text-muted-foreground hover:text-foreground">
             <X className="w-5 h-5" />

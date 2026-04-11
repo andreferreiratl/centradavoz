@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Send, Mic, Check, ArrowLeft, Loader2 } from "lucide-react";
+import Logo from "../components/Logo";
 import { base44 } from "@/api/base44Client";
 import GradientButton from "../components/GradientButton";
 import { cn } from "@/lib/utils";
@@ -106,19 +107,22 @@ Sempre responda em português brasileiro.`,
   return (
     <div className="flex flex-col h-screen">
       {/* Header */}
-      <div className="glass-card border-b border-border/30 px-4 py-3 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center">
-            <Mic className="w-4 h-4 text-white" />
-          </div>
-          <div>
-            <p className="font-heading font-semibold text-sm">Assistente de Voz</p>
-            <p className="text-[10px] text-secondary">Online</p>
+      <div className="glass-card border-b border-border/30 px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center">
+              <Mic className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <p className="font-heading font-semibold text-sm">Estilo de Voz</p>
+              <p className="text-[10px] text-secondary">Plataforma de Locução Online</p>
+            </div>
           </div>
         </div>
+        <Logo size="sm" />
       </div>
 
       {/* Messages */}

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { AudioLines, Zap, ArrowRight, Mic, Clock } from "lucide-react";
+import { Zap, ArrowRight, Mic, Clock } from "lucide-react";
+import Logo from "../components/Logo";
 import { motion } from "framer-motion";
 import GradientButton from "../components/GradientButton";
 
@@ -15,12 +16,7 @@ export default function Landing() {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border/20">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-              <AudioLines className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-heading font-bold text-lg">Central da <span className="text-secondary">Voz</span></span>
-          </div>
+          <Logo />
           <Link to="/dashboard">
             <GradientButton size="sm">Entrar</GradientButton>
           </Link>
@@ -190,12 +186,7 @@ export default function Landing() {
       {/* Footer */}
       <footer className="py-8 px-4 border-t border-border/20">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded gradient-primary flex items-center justify-center">
-              <AudioLines className="w-3 h-3 text-white" />
-            </div>
-            <span className="font-heading font-bold text-sm">Central da Voz</span>
-          </div>
+          <Logo size="sm" />
           <p className="text-xs text-muted-foreground">© 2026 Central da Voz. Todos os direitos reservados.</p>
         </div>
       </footer>

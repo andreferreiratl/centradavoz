@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { AudioLines, FileText, CreditCard, Zap, Plus, AlertTriangle } from "lucide-react";
+import Logo from "../components/Logo";
 import { base44 } from "@/api/base44Client";
 import { useSubscription } from "../lib/useSubscription";
 import StatCard from "../components/StatCard";
@@ -37,12 +38,7 @@ export default function Dashboard() {
     <div className="px-4 pt-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <p className="text-muted-foreground text-sm">Olá,</p>
-          <h1 className="font-heading text-2xl font-bold">
-            {user?.full_name || "Usuário"} 👋
-          </h1>
-        </div>
+        <Logo />
         <div className="flex items-center gap-2">
           {user?.role === "admin" && (
             <Link to="/admin" className="text-xs text-secondary hover:underline">
