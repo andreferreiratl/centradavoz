@@ -105,11 +105,13 @@ export default function GenerateAudio() {
           ? "Chave da API ElevenLabs não configurada. Acesse Admin → Configurações e cadastre ELEVENLABS_API_KEY."
           : "Voice ID não definido para esta voz.";
       } else {
-        // Parâmetros máximos para voz festiva, alegre e cheia de vida
+        // stability alta = saída consistente e estável
+        // similarity_boost alta = preserva a voz original sem distorção
+        // style moderado = mantém expressividade de interpretação sem instabilidade
         const voiceSettings = {
-          stability: 0.05,        // Mínimo absoluto = máxima espontaneidade e variação emocional
-          similarity_boost: 0.75, // Balanceado para preservar identidade sem enrijecer
-          style: 1.0,             // Máximo = exagero total de estilo e expressividade
+          stability: 0.65,
+          similarity_boost: 0.85,
+          style: 0.45,
           use_speaker_boost: true
         };
 
