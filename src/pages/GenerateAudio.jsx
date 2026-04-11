@@ -105,11 +105,11 @@ export default function GenerateAudio() {
           ? "Chave da API ElevenLabs não configurada. Acesse Admin → Configurações e cadastre ELEVENLABS_API_KEY."
           : "Voice ID não definido para esta voz.";
       } else {
-        // Parâmetros otimizados para locução de rádio com emoção intensa
+        // Parâmetros para máxima humanização e expressividade
         const voiceSettings = {
-          stability: 0.28,        // Baixo = mais expressividade e variação natural de locutor
-          similarity_boost: 0.85, // Alto = fidelidade à voz
-          style: 0.82,            // Alto = exagero de estilo tipo rádio
+          stability: 0.18,        // Muito baixo = máxima variação humana, evita robótico
+          similarity_boost: 0.90, // Alto = preserva identidade da voz
+          style: 0.75,            // Alto mas controlado para não distorcer
           use_speaker_boost: true
         };
 
@@ -120,16 +120,18 @@ export default function GenerateAudio() {
         const styleDesc = voiceStyle?.style || "";
         const description = voiceStyle?.description || "";
 
-        // Montar instrução de rádio: específica, energética, com marcadores que o ElevenLabs responde bem
+        // Stage direction otimizada para humanização máxima
+        // O ElevenLabs responde muito bem a instruções em inglês dentro do próprio texto
         const radioDirectionParts = [
-          "radio announcer",
-          "broadcast quality",
-          "high energy",
-          "enthusiastic",
-          "warm and joyful delivery",
-          "upbeat",
-          "confident",
-          "clear diction",
+          "speaks with natural human warmth",
+          "energetic radio host",
+          "dynamic intonation",
+          "natural speech rhythm with organic pauses",
+          "expressive and lively",
+          "passionate delivery",
+          "not robotic",
+          "conversational yet professional",
+          "broadcast radio quality",
         ];
         if (emotion) radioDirectionParts.push(emotion);
         if (tone) radioDirectionParts.push(tone);
@@ -148,9 +150,8 @@ export default function GenerateAudio() {
           },
           body: JSON.stringify({
             text: enrichedText,
-            model_id: "eleven_turbo_v2_5",
-            voice_settings: voiceSettings,
-            speed: 1.0
+            model_id: "eleven_multilingual_v2", // Melhor modelo para expressividade emocional e naturalidade
+            voice_settings: voiceSettings
           })
         });
 
