@@ -35,6 +35,10 @@
         "type": "string"
       }
     },
+    "payment_link": {
+      "type": "string",
+      "title": "Link de Pagamento"
+    },
     "is_active": {
       "type": "boolean",
       "title": "Ativo",
