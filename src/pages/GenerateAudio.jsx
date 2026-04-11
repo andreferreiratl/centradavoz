@@ -105,11 +105,11 @@ export default function GenerateAudio() {
           ? "Chave da API ElevenLabs não configurada. Acesse Admin → Configurações e cadastre ELEVENLABS_API_KEY."
           : "Voice ID não definido para esta voz.";
       } else {
-        // Parâmetros para máxima humanização e expressividade
+        // Parâmetros para máxima alegria, energia e despojo
         const voiceSettings = {
-          stability: 0.18,        // Muito baixo = máxima variação humana, evita robótico
-          similarity_boost: 0.90, // Alto = preserva identidade da voz
-          style: 0.75,            // Alto mas controlado para não distorcer
+          stability: 0.12,        // Mínimo = máxima variação emocional e despojo natural
+          similarity_boost: 0.88,
+          style: 0.92,            // Máximo estilo = exagero expressivo, alegre e vibrante
           use_speaker_boost: true
         };
 
@@ -120,18 +120,19 @@ export default function GenerateAudio() {
         const styleDesc = voiceStyle?.style || "";
         const description = voiceStyle?.description || "";
 
-        // Stage direction otimizada para humanização máxima
-        // O ElevenLabs responde muito bem a instruções em inglês dentro do próprio texto
+        // Stage direction focada em alegria, felicidade e despojo total
         const radioDirectionParts = [
-          "speaks with natural human warmth",
-          "energetic radio host",
-          "dynamic intonation",
-          "natural speech rhythm with organic pauses",
-          "expressive and lively",
-          "passionate delivery",
-          "not robotic",
-          "conversational yet professional",
-          "broadcast radio quality",
+          "extremely joyful and happy",
+          "bursting with positive energy",
+          "playful and carefree delivery",
+          "warm genuine smile in the voice",
+          "upbeat enthusiastic radio host",
+          "contagious excitement",
+          "lively and spontaneous",
+          "full of life and personality",
+          "natural expressive human laughter energy",
+          "fun casual tone",
+          "dynamic rises and falls in pitch",
         ];
         if (emotion) radioDirectionParts.push(emotion);
         if (tone) radioDirectionParts.push(tone);
