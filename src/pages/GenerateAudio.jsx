@@ -105,11 +105,11 @@ export default function GenerateAudio() {
           ? "Chave da API ElevenLabs não configurada. Acesse Admin → Configurações e cadastre ELEVENLABS_API_KEY."
           : "Voice ID não definido para esta voz.";
       } else {
-        // Parâmetros para máxima alegria, energia e despojo
+        // Parâmetros máximos para voz festiva, alegre e cheia de vida
         const voiceSettings = {
-          stability: 0.12,        // Mínimo = máxima variação emocional e despojo natural
-          similarity_boost: 0.88,
-          style: 0.92,            // Máximo estilo = exagero expressivo, alegre e vibrante
+          stability: 0.05,        // Mínimo absoluto = máxima espontaneidade e variação emocional
+          similarity_boost: 0.75, // Balanceado para preservar identidade sem enrijecer
+          style: 1.0,             // Máximo = exagero total de estilo e expressividade
           use_speaker_boost: true
         };
 
@@ -120,27 +120,23 @@ export default function GenerateAudio() {
         const styleDesc = voiceStyle?.style || "";
         const description = voiceStyle?.description || "";
 
-        // Stage direction focada em alegria, felicidade e despojo total
-        const radioDirectionParts = [
+        // Contexto emocional via previous_text (campo válido da API ElevenLabs)
+        // O modelo usa esse texto como contexto emocional antes de falar o texto principal
+        const previousTextParts = [
           "extremely joyful and happy",
           "bursting with positive energy",
-          "playful and carefree delivery",
-          "warm genuine smile in the voice",
-          "upbeat enthusiastic radio host",
-          "contagious excitement",
-          "lively and spontaneous",
-          "full of life and personality",
-          "natural expressive human laughter energy",
-          "fun casual tone",
-          "dynamic rises and falls in pitch",
+          "playful carefree festive radio host",
+          "warm genuine smile",
+          "contagious excitement and fun",
+          "upbeat lively spontaneous",
         ];
-        if (emotion) radioDirectionParts.push(emotion);
-        if (tone) radioDirectionParts.push(tone);
-        if (rhythm) radioDirectionParts.push(rhythm);
-        if (styleDesc) radioDirectionParts.push(styleDesc);
-        if (description) radioDirectionParts.push(description);
+        if (tone) previousTextParts.push(tone);
+        if (rhythm) previousTextParts.push(rhythm);
+        if (styleDesc) previousTextParts.push(styleDesc);
+        if (description) previousTextParts.push(description);
 
-        const voiceDescription = radioDirectionParts.join(", ");
+        // previous_text é um campo válido da API ElevenLabs — define contexto emocional sem ser lido
+        const previousText = previousTextParts.join(", ");
 
         const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice.voice_id}`, {
           method: "POST",
@@ -153,7 +149,7 @@ export default function GenerateAudio() {
             text,
             model_id: "eleven_multilingual_v2",
             voice_settings: voiceSettings,
-            voice_description: voiceDescription
+            previous_text: previousText
           })
         });
 
