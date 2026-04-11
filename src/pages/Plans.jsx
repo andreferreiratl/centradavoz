@@ -78,7 +78,7 @@ export default function Plans() {
             </div>
 
             <a
-              href="https://wa.me/?text=Olá! Gostaria de assinar o plano " 
+              href={`https://wa.me/5567991488814?text=Olá! Gostaria de assinar o plano ${plan.name}`}
               target="_blank"
               rel="noopener noreferrer"
               className="block"
@@ -102,7 +102,7 @@ export default function Plans() {
       <div className="mt-8 text-center">
         <p className="text-xs text-muted-foreground mb-3">Dúvidas sobre os planos?</p>
         <a
-          href="https://wa.me/"
+          href="https://wa.me/5567991488814"
           target="_blank"
           rel="noopener noreferrer"
         >

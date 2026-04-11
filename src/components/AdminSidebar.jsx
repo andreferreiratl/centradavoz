@@ -29,7 +29,7 @@ export default function AdminSidebar({ isOpen, onClose }) {
             <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
               <AudioLines className="w-4 h-4 text-white" />
             </div>
-            <span className="font-heading font-bold text-lg">VozPro</span>
+            <span className="font-heading font-bold text-lg">Central da Voz</span>
             <span className="text-xs text-secondary font-semibold bg-secondary/10 px-2 py-0.5 rounded-full">Admin</span>
           </div>
           <button onClick={onClose} className="lg:hidden text-muted-foreground hover:text-foreground">
@@ -62,7 +62,7 @@ export default function AdminSidebar({ isOpen, onClose }) {
 
         <div className="absolute bottom-6 left-3 right-3">
           <a
-            href="https://wa.me/"
+            href="https://wa.me/5567991488814"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
