@@ -13,6 +13,13 @@ export default function GenerateAudio() {
   const [voices, setVoices] = useState([]);
   const [selectedVoice, setSelectedVoice] = useState(null);
   const [voiceStyle, setVoiceStyle] = useState(null);
+  const [playingId, setPlayingId] = useState(null);
+  const [text, setText] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [audioUrl, setAudioUrl] = useState(null);
+  const [audioPlaying, setAudioPlaying] = useState(false);
+  const [error, setError] = useState(null);
+  const generatedAudioRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
