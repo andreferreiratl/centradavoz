@@ -1,0 +1,54 @@
+{
+  "name": "ElevenLabsVoice",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Nome da Voz"
+    },
+    "voice_id": {
+      "type": "string",
+      "title": "Voice ID (ElevenLabs)"
+    },
+    "preview_url": {
+      "type": "string",
+      "title": "URL de Preview"
+    },
+    "gender": {
+      "type": "string",
+      "title": "G\u00eanero",
+      "enum": [
+        "masculina",
+        "feminina",
+        "neutro"
+      ]
+    },
+    "style": {
+      "type": "string",
+      "title": "Estilo"
+    },
+    "description": {
+      "type": "string",
+      "title": "Descri\u00e7\u00e3o"
+    },
+    "language": {
+      "type": "string",
+      "title": "Idioma",
+      "default": "pt-BR"
+    },
+    "is_active": {
+      "type": "boolean",
+      "title": "Ativa",
+      "default": true
+    },
+    "sort_order": {
+      "type": "number",
+      "title": "Ordem",
+      "default": 0
+    }
+  },
+  "required": [
+    "name",
+    "voice_id"
+  ]
+}

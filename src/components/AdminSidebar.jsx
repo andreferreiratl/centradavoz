@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, CreditCard, FileText, AudioLines, Settings, Shield, MessageCircle, X } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, FileText, AudioLines, Settings, Shield, MessageCircle, X, Mic } from "lucide-react";
 import Logo from "./Logo";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,7 @@ const menuItems = [
   { path: "/admin/audios", icon: AudioLines, label: "Áudios" },
   { path: "/admin/settings", icon: Settings, label: "Configurações" },
   { path: "/admin/logs", icon: Shield, label: "Logs" },
+  { path: "/admin/voices", icon: Mic, label: "Vozes" },
 ];
 
 export default function AdminSidebar({ isOpen, onClose }) {

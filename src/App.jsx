@@ -23,6 +23,7 @@ import AdminSubscriptions from './pages/admin/AdminSubscriptions';
 import AdminAudios from './pages/admin/AdminAudios';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminLogs from './pages/admin/AdminLogs';
+import AdminVoices from './pages/admin/AdminVoices';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -66,6 +67,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/audios" element={<AdminAudios />} />
         <Route path="/admin/settings" element={<AdminSettings />} />
         <Route path="/admin/logs" element={<AdminLogs />} />
+        <Route path="/admin/voices" element={<AdminVoices />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
