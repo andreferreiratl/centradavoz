@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Plus, Trash2, Play, Pause, Mic, Edit2, Check, X } from "lucide-react";
+import { Plus, Trash2, Play, Pause, Mic, Edit2, Check, X, Volume2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { cn } from "@/lib/utils";
 import GradientButton from "../../components/GradientButton";
@@ -13,7 +13,7 @@ export default function AdminVoices() {
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [playingId, setPlayingId] = useState(null);
-  const audioRef = useRef(null);
+  const currentAudioRef = useRef(null);
 
   useEffect(() => { load(); }, []);
 
@@ -49,18 +49,33 @@ export default function AdminVoices() {
 
   function togglePlay(voice) {
     if (!voice.preview_url) return;
+
     if (playingId === voice.id) {
-      audioRef.current?.pause();
+      currentAudioRef.current?.pause();
       setPlayingId(null);
-    } else {
-      if (audioRef.current) audioRef.current.pause();
-      const audio = new Audio(voice.preview_url);
-      audioRef.current = audio;
-      audio.play().catch(() => setPlayingId(null));
-      audio.onended = () => setPlayingId(null);
-      audio.onerror = () => setPlayingId(null);
-      setPlayingId(voice.id);
+      return;
     }
+
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
+
+    const audio = new Audio(voice.preview_url);
+    audio.crossOrigin = "anonymous";
+    audio.onended = () => setPlayingId(null);
+    audio.onerror = () => {
+      setPlayingId(null);
+      // fallback: abrir em nova aba
+      window.open(voice.preview_url, "_blank");
+    };
+    audio.play().then(() => {
+      currentAudioRef.current = audio;
+      setPlayingId(voice.id);
+    }).catch(() => {
+      window.open(voice.preview_url, "_blank");
+      setPlayingId(null);
+    });
   }
 
   const genderLabels = { masculina: "♂ Masculina", feminina: "♀ Feminina", neutro: "⊙ Neutro" };
@@ -80,7 +95,7 @@ export default function AdminVoices() {
       {/* Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="glass-card rounded-2xl p-6 w-full max-w-lg">
+          <div className="glass-card rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-heading font-bold text-lg">{editId ? "Editar Voz" : "Nova Voz"}</h2>
               <button onClick={() => setShowForm(false)}><X className="w-5 h-5 text-muted-foreground" /></button>
@@ -89,7 +104,7 @@ export default function AdminVoices() {
               {[
                 { key: "name", label: "Nome da Voz", placeholder: "Ex: Sofia - Feminina Suave" },
                 { key: "voice_id", label: "Voice ID (ElevenLabs)", placeholder: "Ex: EXAVITQu4vr4xnSDxMaL" },
-                { key: "preview_url", label: "URL de Preview", placeholder: "https://..." },
+                { key: "preview_url", label: "URL de Preview (MP3/OGG)", placeholder: "https://storage.googleapis.com/..." },
                 { key: "style", label: "Estilo", placeholder: "Ex: Comercial, Narrativo, Podcast..." },
                 { key: "description", label: "Descrição", placeholder: "Breve descrição da voz" },
               ].map(f => (
@@ -103,6 +118,15 @@ export default function AdminVoices() {
                   />
                 </div>
               ))}
+
+              {/* Preview URL test */}
+              {form.preview_url && (
+                <div className="bg-muted/50 rounded-xl p-3">
+                  <p className="text-xs text-muted-foreground mb-2">Testar preview:</p>
+                  <audio controls src={form.preview_url} className="w-full h-8" style={{ height: "32px" }} />
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block">Gênero</label>
@@ -156,10 +180,14 @@ export default function AdminVoices() {
                 <p className="text-[10px] text-muted-foreground/60 font-mono mt-0.5 truncate">ID: {voice.voice_id}</p>
               </div>
               <div className="flex items-center gap-2">
-                {voice.preview_url && (
+                {voice.preview_url ? (
                   <button onClick={() => togglePlay(voice)} className={cn("w-9 h-9 rounded-xl flex items-center justify-center transition-all", playingId === voice.id ? "bg-secondary/20 text-secondary" : "bg-muted text-muted-foreground hover:text-foreground")}>
                     {playingId === voice.id ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                   </button>
+                ) : (
+                  <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center opacity-30">
+                    <Volume2 className="w-4 h-4 text-muted-foreground" />
+                  </div>
                 )}
                 <button onClick={() => startEdit(voice)} className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground">
                   <Edit2 className="w-4 h-4" />

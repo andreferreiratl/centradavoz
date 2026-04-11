@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Mic, Loader2, AlertTriangle, RefreshCw, Download, RotateCcw, Play, Pause, Check, ChevronRight } from "lucide-react";
+import { ArrowLeft, Mic, Loader2, AlertTriangle, RefreshCw, Download, RotateCcw, Play, Pause, Check, ChevronRight, Volume2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useSubscription } from "../lib/useSubscription";
 import GradientButton from "../components/GradientButton";
 import AudioMixer from "../components/AudioMixer";
 import { cn } from "@/lib/utils";
 
-// Steps: 1 = voice selection, 2 = text input, 3 = result
 export default function GenerateAudio() {
   const { subscription, loading, user, isActive, remainingChars, setSubscription } = useSubscription();
   const [step, setStep] = useState(1);
@@ -18,8 +17,8 @@ export default function GenerateAudio() {
   const [generating, setGenerating] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
   const [audioPlaying, setAudioPlaying] = useState(false);
-  const previewRef = useRef(null);
-  const generatedRef = useRef(null);
+  const [error, setError] = useState(null);
+  const generatedAudioRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,29 +27,44 @@ export default function GenerateAudio() {
 
   const charCount = text.length;
 
+  // Preview de voz via elemento audio HTML
+  function stopAllPreviews() {
+    document.querySelectorAll("audio.voice-preview").forEach(a => { a.pause(); a.currentTime = 0; });
+    setPlayingId(null);
+  }
+
   function togglePreview(voice) {
     if (!voice.preview_url) return;
+    const existingAudio = document.getElementById(`preview-${voice.id}`);
+
     if (playingId === voice.id) {
-      previewRef.current?.pause();
+      existingAudio?.pause();
       setPlayingId(null);
     } else {
-      previewRef.current?.pause();
-      const audio = new Audio(voice.preview_url);
-      previewRef.current = audio;
-      audio.play().catch(() => setPlayingId(null));
+      stopAllPreviews();
+      const audio = existingAudio || new Audio();
+      audio.id = `preview-${voice.id}`;
+      audio.className = "voice-preview";
+      audio.src = voice.preview_url;
+      audio.crossOrigin = "anonymous";
       audio.onended = () => setPlayingId(null);
       audio.onerror = () => setPlayingId(null);
-      setPlayingId(voice.id);
+      audio.play().then(() => setPlayingId(voice.id)).catch(() => {
+        // fallback: open in new tab
+        window.open(voice.preview_url, "_blank");
+        setPlayingId(null);
+      });
     }
   }
 
   function toggleGenerated() {
-    if (!generatedRef.current) return;
+    const audio = generatedAudioRef.current;
+    if (!audio) return;
     if (audioPlaying) {
-      generatedRef.current.pause();
+      audio.pause();
       setAudioPlaying(false);
     } else {
-      generatedRef.current.play();
+      audio.play().catch(() => setAudioPlaying(false));
       setAudioPlaying(true);
     }
   }
@@ -60,6 +74,8 @@ export default function GenerateAudio() {
     setGenerating(true);
     setAudioUrl(null);
     setAudioPlaying(false);
+    setError(null);
+    generatedAudioRef.current = null;
 
     const record = await base44.entities.AudioRecord.create({
       user_email: user.email,
@@ -70,50 +86,76 @@ export default function GenerateAudio() {
       status: "processing"
     });
 
-    // Call ElevenLabs TTS API
     let generatedUrl = null;
+    let errorMsg = null;
+
     try {
-      const ELEVENLABS_KEY = (await base44.entities.SystemConfig.filter({ key: "ELEVENLABS_API_KEY" }))[0]?.value;
-      const voiceId = selectedVoice?.voice_id;
-      if (ELEVENLABS_KEY && voiceId) {
-        const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      // Busca a API key no SystemConfig
+      const configs = await base44.entities.SystemConfig.filter({ key: "ELEVENLABS_API_KEY" });
+      const apiKey = configs[0]?.value;
+
+      if (!apiKey || !selectedVoice?.voice_id) {
+        errorMsg = !apiKey
+          ? "Chave da API ElevenLabs não configurada. Acesse Admin → Configurações e cadastre ELEVENLABS_API_KEY."
+          : "Voice ID não definido para esta voz.";
+      } else {
+        const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice.voice_id}`, {
           method: "POST",
-          headers: { "xi-api-key": ELEVENLABS_KEY, "Content-Type": "application/json" },
-          body: JSON.stringify({ text, model_id: "eleven_multilingual_v2", voice_settings: { stability: 0.5, similarity_boost: 0.75 } })
+          headers: {
+            "xi-api-key": apiKey,
+            "Content-Type": "application/json",
+            "Accept": "audio/mpeg"
+          },
+          body: JSON.stringify({
+            text,
+            model_id: "eleven_multilingual_v2",
+            voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+          })
         });
+
         if (resp.ok) {
           const blob = await resp.blob();
           generatedUrl = URL.createObjectURL(blob);
           const audio = new Audio(generatedUrl);
-          generatedRef.current = audio;
           audio.onended = () => setAudioPlaying(false);
+          generatedAudioRef.current = audio;
+        } else {
+          const body = await resp.json().catch(() => ({}));
+          errorMsg = body?.detail?.message || `Erro ElevenLabs: ${resp.status}`;
         }
       }
-    } catch (e) { /* fallback */ }
+    } catch (e) {
+      errorMsg = "Erro ao conectar com a API ElevenLabs. Verifique a chave e o Voice ID.";
+    }
 
     const newUsage = (subscription.characters_used || 0) + charCount;
     await base44.entities.Subscription.update(subscription.id, { characters_used: newUsage });
     setSubscription(prev => ({ ...prev, characters_used: newUsage }));
 
-    await base44.entities.AudioRecord.update(record.id, { status: generatedUrl ? "completed" : "failed", audio_url: generatedUrl || "" });
+    await base44.entities.AudioRecord.update(record.id, {
+      status: generatedUrl ? "completed" : "failed",
+      audio_url: generatedUrl || ""
+    });
 
     await base44.entities.ActivityLog.create({
       user_email: user.email,
       action: "audio_generated",
-      details: `Gerou áudio com ${charCount} caracteres. Voz: ${selectedVoice?.name || "padrão"}`,
+      details: `Gerou áudio com ${charCount} caracteres. Voz: ${selectedVoice?.name || "padrão"}. ${errorMsg ? "ERRO: " + errorMsg : ""}`,
       entity_type: "AudioRecord",
       entity_id: record.id
     });
 
     setGenerating(false);
-    setAudioUrl(generatedUrl || "no-url");
+    if (errorMsg) setError(errorMsg);
+    setAudioUrl(generatedUrl || null);
     setStep(3);
   };
 
   const resetAll = () => {
     setAudioUrl(null);
     setAudioPlaying(false);
-    generatedRef.current = null;
+    setError(null);
+    generatedAudioRef.current = null;
     setStep(2);
   };
 
@@ -195,13 +237,19 @@ export default function GenerateAudio() {
                       <p className="text-xs text-muted-foreground">{voice.style || voice.gender}</p>
                       {voice.description && <p className="text-[11px] text-muted-foreground/60 mt-0.5 line-clamp-1">{voice.description}</p>}
                     </div>
-                    {voice.preview_url && (
+                    {voice.preview_url ? (
                       <button onClick={e => { e.stopPropagation(); togglePreview(voice); }}
-                        className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-all flex-shrink-0",
-                          playingId === voice.id ? "bg-secondary text-background" : "bg-muted text-muted-foreground hover:text-foreground"
+                        className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-all flex-shrink-0 border",
+                          playingId === voice.id
+                            ? "bg-secondary border-secondary/40 text-background"
+                            : "bg-muted border-transparent text-muted-foreground hover:text-foreground hover:border-primary/30"
                         )}>
                         {playingId === voice.id ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                       </button>
+                    ) : (
+                      <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center flex-shrink-0 opacity-30">
+                        <Volume2 className="w-4 h-4 text-muted-foreground" />
+                      </div>
                     )}
                   </div>
                 </div>
@@ -223,7 +271,6 @@ export default function GenerateAudio() {
       {/* STEP 2: Text Input */}
       {step === 2 && (
         <div>
-          {/* Selected voice recap */}
           <div className="glass-card rounded-2xl p-3 mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
@@ -239,7 +286,6 @@ export default function GenerateAudio() {
             </button>
           </div>
 
-          {/* Text Input */}
           <div className="glass-card rounded-2xl p-4 mb-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-semibold">Texto para Locução</span>
@@ -280,46 +326,62 @@ export default function GenerateAudio() {
                 <Mic className="w-6 h-6 text-white" />
               </div>
               <div>
-                <p className="font-semibold">Áudio Gerado</p>
+                <p className="font-semibold">{audioUrl ? "Áudio Gerado" : "Processamento Concluído"}</p>
                 <p className="text-xs text-muted-foreground">{charCount} caracteres • {selectedVoice?.name}</p>
               </div>
               <div className="ml-auto">
-                <span className="text-xs bg-green-500/10 text-green-400 border border-green-500/20 px-2 py-1 rounded-full">✓ Pronto</span>
+                {audioUrl
+                  ? <span className="text-xs bg-green-500/10 text-green-400 border border-green-500/20 px-2 py-1 rounded-full">✓ Pronto</span>
+                  : <span className="text-xs bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-1 rounded-full">✗ Erro</span>
+                }
               </div>
             </div>
 
-            {/* Play Button */}
-            <button
-              onClick={toggleGenerated}
-              disabled={!audioUrl || audioUrl === "no-url"}
-              className={cn(
-                "w-full flex items-center justify-center gap-3 py-4 rounded-xl mb-4 transition-all font-semibold",
-                audioUrl && audioUrl !== "no-url"
-                  ? audioPlaying ? "bg-secondary/20 border border-secondary/40 text-secondary" : "gradient-primary text-white glow-primary"
-                  : "bg-muted text-muted-foreground cursor-not-allowed"
-              )}
-            >
-              {audioPlaying ? <><Pause className="w-5 h-5" /> Pausar áudio</> : <><Play className="w-5 h-5" /> Ouvir áudio gerado</>}
-            </button>
+            {/* Error message */}
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 mb-4">
+                <p className="text-xs text-red-400 leading-relaxed">{error}</p>
+              </div>
+            )}
 
-            {(!audioUrl || audioUrl === "no-url") && (
-              <p className="text-xs text-center text-muted-foreground mb-4">Configure a chave ElevenLabs no painel admin para ouvir o áudio</p>
+            {/* Play Button */}
+            {audioUrl && (
+              <button
+                onClick={toggleGenerated}
+                className={cn(
+                  "w-full flex items-center justify-center gap-3 py-4 rounded-xl mb-4 transition-all font-semibold",
+                  audioPlaying
+                    ? "bg-secondary/20 border border-secondary/40 text-secondary"
+                    : "gradient-primary text-white glow-primary"
+                )}
+              >
+                {audioPlaying ? <><Pause className="w-5 h-5" /> Pausar áudio</> : <><Play className="w-5 h-5" /> Ouvir áudio gerado</>}
+              </button>
             )}
 
             {/* Download buttons */}
             <div className="grid grid-cols-2 gap-2 mb-3">
-              <a href={audioUrl && audioUrl !== "no-url" ? audioUrl : "#"} download="audio.mp3"
-                className={cn("flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium transition-all",
-                  audioUrl && audioUrl !== "no-url" ? "gradient-primary text-white glow-primary" : "bg-muted text-muted-foreground cursor-not-allowed pointer-events-none"
-                )}>
-                <Download className="w-4 h-4" /> MP3
-              </a>
-              <a href={audioUrl && audioUrl !== "no-url" ? audioUrl : "#"} download="audio.wav"
-                className={cn("flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium transition-all",
-                  audioUrl && audioUrl !== "no-url" ? "bg-secondary/10 border border-secondary/30 text-secondary" : "bg-muted text-muted-foreground cursor-not-allowed pointer-events-none"
-                )}>
-                <Download className="w-4 h-4" /> WAV
-              </a>
+              {audioUrl ? (
+                <>
+                  <a href={audioUrl} download="audio.mp3"
+                    className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium gradient-primary text-white glow-primary transition-all">
+                    <Download className="w-4 h-4" /> MP3
+                  </a>
+                  <a href={audioUrl} download="audio.wav"
+                    className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium bg-secondary/10 border border-secondary/30 text-secondary transition-all">
+                    <Download className="w-4 h-4" /> WAV
+                  </a>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium bg-muted text-muted-foreground cursor-not-allowed opacity-50">
+                    <Download className="w-4 h-4" /> MP3
+                  </div>
+                  <div className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium bg-muted text-muted-foreground cursor-not-allowed opacity-50">
+                    <Download className="w-4 h-4" /> WAV
+                  </div>
+                </>
+              )}
             </div>
 
             <button onClick={resetAll} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-muted hover:bg-muted/80 text-muted-foreground text-sm font-medium transition-all">
@@ -327,7 +389,7 @@ export default function GenerateAudio() {
             </button>
           </div>
 
-          <AudioMixer generatedAudioUrl={audioUrl !== "no-url" ? audioUrl : null} />
+          {audioUrl && <AudioMixer generatedAudioUrl={audioUrl} />}
         </div>
       )}
     </div>
