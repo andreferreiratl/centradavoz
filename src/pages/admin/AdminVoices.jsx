@@ -48,6 +48,7 @@ export default function AdminVoices() {
   }
 
   function togglePlay(voice) {
+    if (!voice.preview_url) return;
     if (playingId === voice.id) {
       audioRef.current?.pause();
       setPlayingId(null);
@@ -55,8 +56,9 @@ export default function AdminVoices() {
       if (audioRef.current) audioRef.current.pause();
       const audio = new Audio(voice.preview_url);
       audioRef.current = audio;
-      audio.play();
+      audio.play().catch(() => setPlayingId(null));
       audio.onended = () => setPlayingId(null);
+      audio.onerror = () => setPlayingId(null);
       setPlayingId(voice.id);
     }
   }

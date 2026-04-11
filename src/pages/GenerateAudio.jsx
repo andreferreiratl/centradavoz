@@ -29,6 +29,7 @@ export default function GenerateAudio() {
   const charCount = text.length;
 
   function togglePreview(voice) {
+    if (!voice.preview_url) return;
     if (playingId === voice.id) {
       previewRef.current?.pause();
       setPlayingId(null);
@@ -36,8 +37,9 @@ export default function GenerateAudio() {
       previewRef.current?.pause();
       const audio = new Audio(voice.preview_url);
       previewRef.current = audio;
-      audio.play();
+      audio.play().catch(() => setPlayingId(null));
       audio.onended = () => setPlayingId(null);
+      audio.onerror = () => setPlayingId(null);
       setPlayingId(voice.id);
     }
   }
