@@ -43,8 +43,7 @@ export default function GenerateAudio() {
       audio.pause();
       setAudioPlaying(false);
     } else {
-      audio.play().catch(() => setAudioPlaying(false));
-      setAudioPlaying(true);
+      audio.play().then(() => setAudioPlaying(true)).catch(() => setAudioPlaying(false));
     }
   }
 
@@ -104,9 +103,6 @@ export default function GenerateAudio() {
         if (resp.ok) {
           const blob = await resp.blob();
           generatedUrl = URL.createObjectURL(blob);
-          const audio = new Audio(generatedUrl);
-          audio.onended = () => setAudioPlaying(false);
-          generatedAudioRef.current = audio;
         } else {
           const body = await resp.json().catch(() => ({}));
           errorMsg = body?.message || body?.error || `Erro LMNT: ${resp.status}`;
@@ -137,6 +133,7 @@ export default function GenerateAudio() {
     if (errorMsg) setError(errorMsg);
     setAudioUrl(generatedUrl || null);
     setHasResult(true);
+    // Audio element will be rendered in JSX and ref assigned automatically
   };
 
   const resetResult = () => {
@@ -288,6 +285,12 @@ export default function GenerateAudio() {
 
           {audioUrl && (
             <>
+              <audio
+                ref={generatedAudioRef}
+                src={audioUrl}
+                onEnded={() => setAudioPlaying(false)}
+                className="hidden"
+              />
               <button
                 onClick={toggleGenerated}
                 className={cn(
