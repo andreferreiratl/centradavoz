@@ -102,7 +102,7 @@ export default function Dashboard() {
       <Link to="/generate">
         <div className="gradient-primary rounded-2xl p-5 flex items-center justify-between glow-primary active:scale-[0.98] transition-transform">
           <div>
-            <h3 className="font-heading font-bold text-lg text-white">Criar novo áudio</h3>
+            <h3 className="font-heading font-bold text-lg text-white">Clique aqui e gere sua Locução!</h3>
             <p className="text-white/70 text-sm">Transforme texto em voz profissional</p>
           </div>
           <Plus className="w-8 h-8 text-white" />
