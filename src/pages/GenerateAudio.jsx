@@ -100,9 +100,25 @@ export default function GenerateAudio() {
         });
 
         if (resp.ok) {
-          const arrayBuffer = await resp.arrayBuffer();
-          const blob = new Blob([arrayBuffer], { type: "audio/mpeg" });
-          generatedUrl = URL.createObjectURL(blob);
+          const contentType = resp.headers.get("content-type") || "";
+          if (contentType.includes("application/json")) {
+            const json = await resp.json();
+            // LMNT returns { audio: "base64...", ... }
+            const b64 = json.audio;
+            if (b64) {
+              const binary = atob(b64);
+              const bytes = new Uint8Array(binary.length);
+              for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+              const blob = new Blob([bytes], { type: "audio/mpeg" });
+              generatedUrl = URL.createObjectURL(blob);
+            } else {
+              errorMsg = json?.message || json?.error || "Resposta inesperada da API LMNT.";
+            }
+          } else {
+            const arrayBuffer = await resp.arrayBuffer();
+            const blob = new Blob([arrayBuffer], { type: "audio/mpeg" });
+            generatedUrl = URL.createObjectURL(blob);
+          }
         } else {
           const body = await resp.json().catch(() => ({}));
           errorMsg = body?.message || body?.error || `Erro LMNT: ${resp.status}`;
