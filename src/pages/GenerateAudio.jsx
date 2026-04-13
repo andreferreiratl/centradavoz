@@ -180,7 +180,7 @@ export default function GenerateAudio() {
         <img
           src="https://media.base44.com/images/public/69da50375cc9660ed0fab63a/c9d2e48da_file_000000009a48720eaaa61bf4a204e45c.png"
           alt="Central da Voz"
-          className="h-8 w-auto object-contain"
+          className="h-12 w-auto object-contain"
         />
       </div>
 
