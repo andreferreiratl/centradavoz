@@ -115,7 +115,8 @@ export default function GenerateAudio() {
         });
 
         if (resp.ok) {
-          const blob = await resp.blob();
+          const arrayBuffer = await resp.arrayBuffer();
+          const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
           generatedUrl = URL.createObjectURL(blob);
         } else {
           const body = await resp.json().catch(() => ({}));
