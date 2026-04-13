@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Mic, Loader2, AlertTriangle, Download, Play, Pause, RotateCcw, Sparkles, UserCircle2 } from "lucide-react";
+import { ArrowLeft, Mic, Loader2, AlertTriangle, Download, Play, Pause, RotateCcw, Sparkles, UserCircle2, Wand2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useSubscription } from "../lib/useSubscription";
 import GradientButton from "../components/GradientButton";
@@ -19,6 +19,7 @@ export default function GenerateAudio() {
   const [audioPlaying, setAudioPlaying] = useState(false);
   const [error, setError] = useState(null);
   const [hasResult, setHasResult] = useState(false);
+  const [improving, setImproving] = useState(false);
   const generatedAudioRef = useRef(null);
   const navigate = useNavigate();
 
@@ -33,7 +34,6 @@ export default function GenerateAudio() {
   }, []);
 
   const selectedVoice = voices.find(v => v.id === selectedVoiceId) || null;
-  const selectedStyle = voiceStyles.find(s => s.id === selectedStyleId) || null;
   const charCount = text.length;
 
   function toggleGenerated() {
@@ -47,6 +47,16 @@ export default function GenerateAudio() {
       setAudioPlaying(true);
     }
   }
+
+  const handleImproveText = async () => {
+    if (!text.trim() || improving) return;
+    setImproving(true);
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Você é um especialista em copywriting e locução profissional. Melhore o texto abaixo para soar mais profissional, envolvente e impactante, mantendo a mensagem original e o mesmo idioma. Retorne apenas o texto melhorado, sem explicações.\n\nTexto:\n${text}`,
+    });
+    if (result) setText(result);
+    setImproving(false);
+  };
 
   const handleGenerate = async () => {
     if (!isActive || charCount === 0 || charCount > remainingChars || !selectedVoice) return;
@@ -217,7 +227,7 @@ export default function GenerateAudio() {
           ) : (
             <div className="w-full bg-muted border border-border rounded-xl px-4 py-3 flex items-center justify-between">
               <span className="text-xs text-muted-foreground">Nenhum estilo definido</span>
-              <Link to="/voice-assistant" className="text-xs text-secondary hover:underline font-medium">Definir →</Link>
+              <Link to="/voice-assistant" className="text-xs text-secondary hover:underline font-medium">Definir</Link>
             </div>
           )}
         </div>
@@ -227,9 +237,20 @@ export default function GenerateAudio() {
       <div className="glass-card rounded-2xl p-4 mb-4">
         <div className="flex items-center justify-between mb-3">
           <span className="font-heading font-semibold text-base">Roteiro / Texto</span>
-          <span className={cn("text-xs font-medium", charCount > remainingChars ? "text-red-400" : "text-muted-foreground")}>
-            {charCount.toLocaleString()} / {remainingChars.toLocaleString()} CARACTERES
-          </span>
+          <div className="flex items-center gap-2">
+            <span className={cn("text-xs font-medium", charCount > remainingChars ? "text-red-400" : "text-muted-foreground")}>
+              {charCount.toLocaleString()} / {remainingChars.toLocaleString()} CARACTERES
+            </span>
+            <button
+              onClick={handleImproveText}
+              disabled={!text.trim() || improving}
+              title="Melhorar texto com IA"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {improving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+              {improving ? "Melhorando..." : "IA"}
+            </button>
+          </div>
         </div>
         <textarea
           value={text}
