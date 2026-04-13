@@ -108,16 +108,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Reset Button */}
-      <button
-        onClick={handleReset}
-        disabled={resetting}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-muted hover:bg-destructive/10 border border-border hover:border-destructive/30 text-muted-foreground hover:text-destructive text-sm font-medium transition-all mb-3 disabled:opacity-50"
-      >
-        <RotateCcw className="w-4 h-4" />
-        {resetting ? "Zerando..." : "Zerar áudios e caracteres"}
-      </button>
-
       {/* Quick Actions */}
       <Link to="/generate">
         <div className="gradient-primary rounded-2xl p-5 flex items-center justify-between glow-primary active:scale-[0.98] transition-transform">
