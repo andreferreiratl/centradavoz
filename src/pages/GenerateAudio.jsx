@@ -33,7 +33,6 @@ export default function GenerateAudio() {
 
   const charCount = text.length;
 
-  // Preview de voz via elemento audio HTML
   function stopAllPreviews() {
     document.querySelectorAll("audio.voice-preview").forEach(a => { a.pause(); a.currentTime = 0; });
     setPlayingId(null);
@@ -56,7 +55,6 @@ export default function GenerateAudio() {
       audio.onended = () => setPlayingId(null);
       audio.onerror = () => setPlayingId(null);
       audio.play().then(() => setPlayingId(voice.id)).catch(() => {
-        // fallback: open in new tab
         window.open(voice.preview_url, "_blank");
         setPlayingId(null);
       });
@@ -96,62 +94,24 @@ export default function GenerateAudio() {
     let errorMsg = null;
 
     try {
-      // Busca a API key no SystemConfig
-      const configs = await base44.entities.SystemConfig.filter({ key: "ELEVENLABS_API_KEY" });
+      const configs = await base44.entities.SystemConfig.filter({ key: "LMNT_API_KEY" });
       const apiKey = configs[0]?.value;
 
       if (!apiKey || !selectedVoice?.voice_id) {
         errorMsg = !apiKey
-          ? "Chave da API ElevenLabs não configurada. Acesse Admin → Configurações e cadastre ELEVENLABS_API_KEY."
+          ? "Chave da API LMNT não configurada. Acesse Admin → Configurações e cadastre LMNT_API_KEY."
           : "Voice ID não definido para esta voz.";
       } else {
-        // stability alta = saída consistente e estável
-        // similarity_boost alta = preserva a voz original sem distorção
-        // style moderado = mantém expressividade de interpretação sem instabilidade
-        const voiceSettings = {
-          stability: 0.65,
-          similarity_boost: 0.85,
-          style: 0.45,
-          use_speaker_boost: true
-        };
-
-        // Stage direction estilo locutor de rádio — instrução emocional direta ao modelo
-        const emotion = voiceStyle?.emotion?.toLowerCase() || "";
-        const tone = voiceStyle?.tone || "";
-        const rhythm = voiceStyle?.rhythm || "";
-        const styleDesc = voiceStyle?.style || "";
-        const description = voiceStyle?.description || "";
-
-        // Contexto emocional via previous_text (campo válido da API ElevenLabs)
-        // O modelo usa esse texto como contexto emocional antes de falar o texto principal
-        const previousTextParts = [
-          "extremely joyful and happy",
-          "bursting with positive energy",
-          "playful carefree festive radio host",
-          "warm genuine smile",
-          "contagious excitement and fun",
-          "upbeat lively spontaneous",
-        ];
-        if (tone) previousTextParts.push(tone);
-        if (rhythm) previousTextParts.push(rhythm);
-        if (styleDesc) previousTextParts.push(styleDesc);
-        if (description) previousTextParts.push(description);
-
-        // previous_text é um campo válido da API ElevenLabs — define contexto emocional sem ser lido
-        const previousText = previousTextParts.join(", ");
-
-        const resp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice.voice_id}`, {
+        const resp = await fetch("https://api.lmnt.com/v1/ai/speech", {
           method: "POST",
           headers: {
-            "xi-api-key": apiKey,
+            "X-API-Key": apiKey,
             "Content-Type": "application/json",
-            "Accept": "audio/mpeg"
           },
           body: JSON.stringify({
             text,
-            model_id: "eleven_multilingual_v2",
-            voice_settings: voiceSettings,
-            previous_text: previousText
+            voice: selectedVoice.voice_id,
+            format: "mp3",
           })
         });
 
@@ -163,11 +123,11 @@ export default function GenerateAudio() {
           generatedAudioRef.current = audio;
         } else {
           const body = await resp.json().catch(() => ({}));
-          errorMsg = body?.detail?.message || `Erro ElevenLabs: ${resp.status}`;
+          errorMsg = body?.message || body?.error || `Erro LMNT: ${resp.status}`;
         }
       }
     } catch (e) {
-      errorMsg = "Erro ao conectar com a API ElevenLabs. Verifique a chave e o Voice ID.";
+      errorMsg = "Erro ao conectar com a API LMNT. Verifique a chave e o Voice ID.";
     }
 
     const newUsage = (subscription.characters_used || 0) + charCount;
@@ -256,7 +216,6 @@ export default function GenerateAudio() {
         <div>
           <p className="text-sm text-muted-foreground mb-4">Ouça o preview e escolha a voz ideal para seu projeto</p>
 
-          {/* Voice Style Badge */}
           {voiceStyle ? (
             <div className="glass-card rounded-xl p-3 mb-4 border-secondary/30 flex items-center justify-between">
               <div>
@@ -398,14 +357,12 @@ export default function GenerateAudio() {
               </div>
             </div>
 
-            {/* Error message */}
             {error && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 mb-4">
                 <p className="text-xs text-red-400 leading-relaxed">{error}</p>
               </div>
             )}
 
-            {/* Play Button */}
             {audioUrl && (
               <button
                 onClick={toggleGenerated}
@@ -420,7 +377,6 @@ export default function GenerateAudio() {
               </button>
             )}
 
-            {/* Download buttons */}
             <div className="grid grid-cols-2 gap-2 mb-3">
               {audioUrl ? (
                 <>
