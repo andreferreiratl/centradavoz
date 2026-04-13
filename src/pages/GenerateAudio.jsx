@@ -192,7 +192,7 @@ export default function GenerateAudio() {
             <div>
               <p className="text-sm font-semibold text-yellow-400">Acesso Restrito</p>
               <p className="text-xs text-muted-foreground mt-1">Você precisa de um plano ativo para gerar locuções.</p>
-              <Link to="/plans"><GradientButton size="sm" className="mt-2">Ver Planos</GradientButton></Link>
+              <Link to="/plans"><GradientButton size="sm" className="font-heading font-semibold rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none px-4 py-2 text-sm gradient-primary hover:gradient-primary-hover text-white glow-primary mt-2">Ver Planos</GradientButton></Link>
             </div>
           </div>
         </div>
