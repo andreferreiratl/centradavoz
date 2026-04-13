@@ -33,21 +33,6 @@ export default function GenerateAudio() {
     });
   }, []);
 
-  // Create Audio object when audioUrl changes
-  useEffect(() => {
-    if (!audioUrl) {
-      generatedAudioRef.current = null;
-      return;
-    }
-    const audio = new Audio(audioUrl);
-    audio.onended = () => setAudioPlaying(false);
-    generatedAudioRef.current = audio;
-    return () => {
-      audio.pause();
-      generatedAudioRef.current = null;
-    };
-  }, [audioUrl]);
-
   const selectedVoice = voices.find(v => v.id === selectedVoiceId) || null;
   const charCount = text.length;
 
@@ -58,7 +43,7 @@ export default function GenerateAudio() {
       audio.pause();
       setAudioPlaying(false);
     } else {
-      audio.play().then(() => setAudioPlaying(true)).catch(() => setAudioPlaying(false));
+      audio.play().then(() => setAudioPlaying(true)).catch(console.error);
     }
   }
 
@@ -116,7 +101,7 @@ export default function GenerateAudio() {
 
         if (resp.ok) {
           const arrayBuffer = await resp.arrayBuffer();
-          const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
+          const blob = new Blob([arrayBuffer], { type: "audio/mpeg" });
           generatedUrl = URL.createObjectURL(blob);
         } else {
           const body = await resp.json().catch(() => ({}));
@@ -151,6 +136,9 @@ export default function GenerateAudio() {
   };
 
   const resetResult = () => {
+    if (generatedAudioRef.current) {
+      generatedAudioRef.current.pause();
+    }
     setAudioUrl(null);
     setAudioPlaying(false);
     setError(null);
@@ -296,6 +284,14 @@ export default function GenerateAudio() {
 
           {audioUrl && (
             <>
+              <audio
+                ref={generatedAudioRef}
+                src={audioUrl}
+                onEnded={() => setAudioPlaying(false)}
+                preload="auto"
+                style={{ display: "none" }}
+              />
+
               <button
                 onClick={toggleGenerated}
                 className={cn(
