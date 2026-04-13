@@ -26,7 +26,7 @@ export default function AdminLayout() {
                 <div className="w-7 h-7 rounded-lg gradient-primary flex items-center justify-center">
                   <AudioLines className="w-3.5 h-3.5 text-white" />
                 </div>
-                <span className="font-heading font-bold">Centrald  Admin</span>
+                <span className="font-heading font-bold">Central da VOZ - Admin</span>
               </div>
             </div>
             <div className="flex items-center gap-3">
