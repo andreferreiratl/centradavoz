@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Music, Upload, Volume2, Play, Pause, X } from "lucide-react";
-import GradientButton from "./GradientButton";
+import { Music, Upload, Volume2, Play, Pause, X, Timer } from "lucide-react";
 
 export default function AudioMixer({ generatedAudioUrl }) {
   const [bgFile, setBgFile] = useState(null);
@@ -8,6 +7,10 @@ export default function AudioMixer({ generatedAudioUrl }) {
   const [bgVolume, setBgVolume] = useState(50);
   const [mainVolume, setMainVolume] = useState(80);
   const [isPlaying, setIsPlaying] = useState(false);
+  // Timing controls
+  const [mainStart, setMainStart] = useState("");
+  const [mainEnd, setMainEnd] = useState("");
+  const [bgEnd, setBgEnd] = useState("");
   const mainAudioRef = useRef(null);
   const bgAudioRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -33,13 +36,43 @@ export default function AudioMixer({ generatedAudioUrl }) {
     if (isPlaying) {
       bgAudioRef.current?.pause();
       mainAudioRef.current?.pause();
-    } else {
-      bgAudioRef.current?.play();
-      if (generatedAudioUrl && generatedAudioUrl !== "generated") {
-        mainAudioRef.current?.play();
+      setIsPlaying(false);
+      return;
+    }
+
+    const main = mainAudioRef.current;
+    const bg = bgAudioRef.current;
+
+    if (bg) {
+      bg.currentTime = 0;
+      bg.play();
+      if (bgEnd !== "" && Number(bgEnd) > 0) {
+        const bgEndSec = Number(bgEnd);
+        const checkBgEnd = setInterval(() => {
+          if (bg.currentTime >= bgEndSec) {
+            bg.pause();
+            clearInterval(checkBgEnd);
+          }
+        }, 200);
       }
     }
-    setIsPlaying(!isPlaying);
+
+    if (main && generatedAudioUrl && generatedAudioUrl !== "generated") {
+      const startSec = mainStart !== "" ? Number(mainStart) : 0;
+      main.currentTime = startSec;
+      main.play();
+      if (mainEnd !== "" && Number(mainEnd) > startSec) {
+        const endSec = Number(mainEnd);
+        const checkEnd = setInterval(() => {
+          if (main.currentTime >= endSec) {
+            main.pause();
+            clearInterval(checkEnd);
+          }
+        }, 200);
+      }
+    }
+
+    setIsPlaying(true);
   };
 
   const removeBg = () => {
@@ -110,6 +143,51 @@ export default function AudioMixer({ generatedAudioUrl }) {
               onChange={(e) => setBgVolume(Number(e.target.value))}
               className="w-full h-2 rounded-full accent-secondary cursor-pointer"
             />
+          </div>
+
+          {/* Timing Controls */}
+          <div className="mb-4 bg-muted/50 rounded-xl p-3 space-y-3">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Timer className="w-3.5 h-3.5 text-primary" />
+              <span className="text-xs font-semibold text-foreground">Controle de Tempo</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] text-muted-foreground mb-1 uppercase tracking-wide">Início do áudio gerado (s)</label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Ex: 0"
+                  value={mainStart}
+                  onChange={e => setMainStart(e.target.value)}
+                  className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-muted-foreground mb-1 uppercase tracking-wide">Fim do áudio gerado (s)</label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Ex: 30"
+                  value={mainEnd}
+                  onChange={e => setMainEnd(e.target.value)}
+                  className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] text-muted-foreground mb-1 uppercase tracking-wide">Encerrar trilha de fundo no segundo (s)</label>
+              <input
+                type="number"
+                min="0"
+                placeholder="Ex: 60"
+                value={bgEnd}
+                onChange={e => setBgEnd(e.target.value)}
+                className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+              />
+            </div>
           </div>
 
           <button
