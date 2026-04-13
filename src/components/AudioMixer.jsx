@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Music, Upload, Volume2, Play, Pause, X, Download, Loader2 } from "lucide-react";
+import { Music, Upload, Volume2, Play, Pause, X, Download, Loader2, Library } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 
 function encodeWAV(samples, sampleRate) {
   const buffer = new ArrayBuffer(44 + samples.length * 2);
@@ -32,6 +33,9 @@ async function loadAudioBuffer(audioCtx, url) {
 }
 
 export default function AudioMixer({ generatedAudioUrl }) {
+  const [mode, setMode] = useState("library"); // "library" | "device"
+  const [catalogTracks, setCatalogTracks] = useState([]);
+  const [selectedTrackId, setSelectedTrackId] = useState("");
   const [bgFile, setBgFile] = useState(null);
   const [bgObjectUrl, setBgObjectUrl] = useState(null);
   const [mainVolume, setMainVolume] = useState(80);
@@ -46,6 +50,14 @@ export default function AudioMixer({ generatedAudioUrl }) {
   const bgGainRef = useRef(null);
   const fileInputRef = useRef(null);
 
+  useEffect(() => {
+    base44.entities.BackgroundTrack.filter({ is_active: true }, "sort_order").then(setCatalogTracks);
+  }, []);
+
+  const activeBgUrl = mode === "library"
+    ? catalogTracks.find(t => t.id === selectedTrackId)?.audio_url || null
+    : bgObjectUrl;
+
   const stopPlayback = useCallback(() => {
     mainSourceRef.current?.stop();
     bgSourceRef.current?.stop();
@@ -58,35 +70,28 @@ export default function AudioMixer({ generatedAudioUrl }) {
 
   useEffect(() => () => stopPlayback(), [stopPlayback]);
 
-  // Update gain in real time during playback
-  useEffect(() => {
-    if (mainGainRef.current) mainGainRef.current.gain.value = mainVolume / 100;
-  }, [mainVolume]);
-
-  useEffect(() => {
-    if (bgGainRef.current) bgGainRef.current.gain.value = bgVolume / 100;
-  }, [bgVolume]);
+  useEffect(() => { if (mainGainRef.current) mainGainRef.current.gain.value = mainVolume / 100; }, [mainVolume]);
+  useEffect(() => { if (bgGainRef.current) bgGainRef.current.gain.value = bgVolume / 100; }, [bgVolume]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     if (bgObjectUrl) URL.revokeObjectURL(bgObjectUrl);
-    const url = URL.createObjectURL(file);
     setBgFile(file);
-    setBgObjectUrl(url);
+    setBgObjectUrl(URL.createObjectURL(file));
     stopPlayback();
   };
 
   const togglePreview = async () => {
     if (isPlaying) { stopPlayback(); return; }
-    if (!generatedAudioUrl || !bgObjectUrl) return;
+    if (!generatedAudioUrl || !activeBgUrl) return;
 
     const ctx = new AudioContext();
     audioCtxRef.current = ctx;
 
     const [mainBuf, bgBuf] = await Promise.all([
       loadAudioBuffer(ctx, generatedAudioUrl),
-      loadAudioBuffer(ctx, bgObjectUrl),
+      loadAudioBuffer(ctx, activeBgUrl),
     ]);
 
     const mainGain = ctx.createGain();
@@ -113,7 +118,6 @@ export default function AudioMixer({ generatedAudioUrl }) {
     bgSrc.start(0);
     setIsPlaying(true);
 
-    // After main ends: raise bg for 1s then fade out over 1s
     mainSrc.onended = () => {
       if (!audioCtxRef.current) return;
       const now = ctx.currentTime;
@@ -125,64 +129,50 @@ export default function AudioMixer({ generatedAudioUrl }) {
   };
 
   const handleExport = async () => {
-    if (!generatedAudioUrl || !bgObjectUrl) return;
+    if (!generatedAudioUrl || !activeBgUrl) return;
     setExporting(true);
 
     const tmpCtx = new AudioContext();
     const [mainBuf, bgBuf] = await Promise.all([
       loadAudioBuffer(tmpCtx, generatedAudioUrl),
-      loadAudioBuffer(tmpCtx, bgObjectUrl),
+      loadAudioBuffer(tmpCtx, activeBgUrl),
     ]);
     await tmpCtx.close();
 
     const sampleRate = mainBuf.sampleRate;
     const length = mainBuf.length;
-    const offlineCtx = new OfflineAudioContext(1, length, sampleRate);
+    const extraSamples = sampleRate * 2;
+    const totalLength = length + extraSamples;
+    const offlineCtx = new OfflineAudioContext(1, totalLength, sampleRate);
 
     const mainGain = offlineCtx.createGain();
     mainGain.gain.value = mainVolume / 100;
     const bgGain = offlineCtx.createGain();
     bgGain.gain.value = bgVolume / 100;
 
+    const mainDuration = length / sampleRate;
+    bgGain.gain.setValueAtTime(bgVolume / 100, mainDuration);
+    bgGain.gain.linearRampToValueAtTime(1.0, mainDuration + 1.0);
+    bgGain.gain.linearRampToValueAtTime(0, mainDuration + 2.0);
+
+    const bgData = bgBuf.getChannelData(0);
+    const loopedBg = offlineCtx.createBuffer(1, totalLength, sampleRate);
+    const loopedData = loopedBg.getChannelData(0);
+    for (let i = 0; i < totalLength; i++) loopedData[i] = bgData[i % bgData.length];
+
     const mainSrc = offlineCtx.createBufferSource();
     mainSrc.buffer = mainBuf;
     mainSrc.connect(mainGain).connect(offlineCtx.destination);
 
-    // Extra 2s after main: 1s raise bg + 1s fade out
-    const extraSamples = sampleRate * 2;
-    const totalLength = length + extraSamples;
-    const offlineCtx2 = new OfflineAudioContext(1, totalLength, sampleRate);
+    const bgSrc = offlineCtx.createBufferSource();
+    bgSrc.buffer = loopedBg;
+    bgSrc.connect(bgGain).connect(offlineCtx.destination);
 
-    const mainGain2 = offlineCtx2.createGain();
-    mainGain2.gain.value = mainVolume / 100;
-    const bgGain2 = offlineCtx2.createGain();
-    bgGain2.gain.value = bgVolume / 100;
+    mainSrc.start(0);
+    bgSrc.start(0);
 
-    const mainDuration = length / sampleRate;
-    // Raise bg to 1.0 over 1s after main ends, then fade to 0 over 1s
-    bgGain2.gain.setValueAtTime(bgVolume / 100, mainDuration);
-    bgGain2.gain.linearRampToValueAtTime(1.0, mainDuration + 1.0);
-    bgGain2.gain.linearRampToValueAtTime(0, mainDuration + 2.0);
-
-    const bgData = bgBuf.getChannelData(0);
-    const loopedBg = offlineCtx2.createBuffer(1, totalLength, sampleRate);
-    const loopedData = loopedBg.getChannelData(0);
-    for (let i = 0; i < totalLength; i++) loopedData[i] = bgData[i % bgData.length];
-
-    const mainSrc2 = offlineCtx2.createBufferSource();
-    mainSrc2.buffer = mainBuf;
-    mainSrc2.connect(mainGain2).connect(offlineCtx2.destination);
-
-    const bgSrc2 = offlineCtx2.createBufferSource();
-    bgSrc2.buffer = loopedBg;
-    bgSrc2.connect(bgGain2).connect(offlineCtx2.destination);
-
-    mainSrc2.start(0);
-    bgSrc2.start(0);
-
-    const rendered = await offlineCtx2.startRendering();
+    const rendered = await offlineCtx.startRendering();
     const wav = encodeWAV(rendered.getChannelData(0), sampleRate);
-
     const blob = new Blob([wav], { type: "audio/wav" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -201,8 +191,7 @@ export default function AudioMixer({ generatedAudioUrl }) {
     setBgObjectUrl(null);
   };
 
-  const hasMain = !!generatedAudioUrl;
-  const hasBg = !!bgObjectUrl;
+  const hasBg = !!activeBgUrl;
 
   return (
     <div className="glass-card rounded-2xl p-4 mt-4">
@@ -219,34 +208,76 @@ export default function AudioMixer({ generatedAudioUrl }) {
           </span>
           <span className="text-xs font-medium">{mainVolume}%</span>
         </div>
-        <input
-          type="range" min="0" max="100" value={mainVolume}
+        <input type="range" min="0" max="100" value={mainVolume}
           onChange={(e) => setMainVolume(Number(e.target.value))}
-          className="w-full h-2 rounded-full accent-primary cursor-pointer"
-        />
+          className="w-full h-2 rounded-full accent-primary cursor-pointer" />
       </div>
 
-      {/* Upload BG Track */}
-      {!hasBg ? (
+      {/* Mode Selector */}
+      <div className="flex gap-2 mb-3">
         <button
-          onClick={() => fileInputRef.current?.click()}
-          className="w-full border-2 border-dashed border-border hover:border-primary/40 rounded-xl p-4 text-center transition-all group"
+          onClick={() => { setMode("library"); stopPlayback(); }}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition-all ${mode === "library" ? "gradient-primary text-white border-transparent" : "bg-muted border-border text-muted-foreground"}`}
         >
-          <Upload className="w-6 h-6 text-muted-foreground group-hover:text-primary mx-auto mb-2 transition-colors" />
-          <p className="text-xs text-muted-foreground">Clique para adicionar trilha de fundo (MP3, WAV, OGG)</p>
-          <input ref={fileInputRef} type="file" accept="audio/*" onChange={handleFileChange} className="hidden" />
+          <Library className="w-3.5 h-3.5" /> Trilhas da Plataforma
         </button>
-      ) : (
-        <>
-          <div className="flex items-center gap-2 mb-3 bg-muted rounded-xl p-3">
-            <Music className="w-4 h-4 text-secondary flex-shrink-0" />
-            <span className="text-xs flex-1 truncate">{bgFile?.name}</span>
-            <button onClick={removeBg} className="text-muted-foreground hover:text-foreground">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+        <button
+          onClick={() => { setMode("device"); stopPlayback(); }}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition-all ${mode === "device" ? "gradient-primary text-white border-transparent" : "bg-muted border-border text-muted-foreground"}`}
+        >
+          <Upload className="w-3.5 h-3.5" /> Meu Dispositivo
+        </button>
+      </div>
 
-          {/* Volume - BG */}
+      {/* Library mode */}
+      {mode === "library" && (
+        <div className="mb-3">
+          {catalogTracks.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-3">Nenhuma trilha cadastrada ainda.</p>
+          ) : (
+            <select
+              value={selectedTrackId}
+              onChange={(e) => { setSelectedTrackId(e.target.value); stopPlayback(); }}
+              className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 appearance-none cursor-pointer"
+            >
+              <option value="">— Selecione uma trilha —</option>
+              {catalogTracks.map(t => (
+                <option key={t.id} value={t.id}>
+                  {t.category ? `[${t.category}] ` : ""}{t.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
+
+      {/* Device mode */}
+      {mode === "device" && (
+        <div className="mb-3">
+          {!bgObjectUrl ? (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full border-2 border-dashed border-border hover:border-primary/40 rounded-xl p-4 text-center transition-all group"
+            >
+              <Upload className="w-6 h-6 text-muted-foreground group-hover:text-primary mx-auto mb-2 transition-colors" />
+              <p className="text-xs text-muted-foreground">Clique para adicionar trilha (MP3, WAV, OGG)</p>
+              <input ref={fileInputRef} type="file" accept="audio/*" onChange={handleFileChange} className="hidden" />
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 bg-muted rounded-xl p-3">
+              <Music className="w-4 h-4 text-secondary flex-shrink-0" />
+              <span className="text-xs flex-1 truncate">{bgFile?.name}</span>
+              <button onClick={removeBg} className="text-muted-foreground hover:text-foreground">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Volume BG + controls */}
+      {hasBg && (
+        <>
           <div className="mb-4">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-xs text-muted-foreground flex items-center gap-1.5">
@@ -254,33 +285,26 @@ export default function AudioMixer({ generatedAudioUrl }) {
               </span>
               <span className="text-xs font-medium">{bgVolume}%</span>
             </div>
-            <input
-              type="range" min="0" max="100" value={bgVolume}
+            <input type="range" min="0" max="100" value={bgVolume}
               onChange={(e) => setBgVolume(Number(e.target.value))}
-              className="w-full h-2 rounded-full accent-secondary cursor-pointer"
-            />
+              className="w-full h-2 rounded-full accent-secondary cursor-pointer" />
           </div>
 
-          {/* Preview */}
           <button
             onClick={togglePreview}
-            disabled={!hasMain}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-secondary/10 hover:bg-secondary/20 border border-secondary/30 text-secondary text-sm font-medium transition-all mb-2 disabled:opacity-40"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-secondary/10 hover:bg-secondary/20 border border-secondary/30 text-secondary text-sm font-medium transition-all mb-2"
           >
-            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-            {isPlaying ? "Pausar preview" : "Ouvir preview da mixagem"}
+            {isPlaying ? <><Pause className="w-4 h-4" /> Pausar preview</> : <><Play className="w-4 h-4" /> Ouvir preview da mixagem</>}
           </button>
 
-          {/* Download Mixed */}
           <button
             onClick={handleExport}
-            disabled={!hasMain || exporting}
+            disabled={exporting}
             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl gradient-primary text-white text-sm font-medium transition-all disabled:opacity-40"
           >
             {exporting
               ? <><Loader2 className="w-4 h-4 animate-spin" /> Exportando...</>
-              : <><Download className="w-4 h-4" /> Baixar Áudio Mixado (WAV)</>
-            }
+              : <><Download className="w-4 h-4" /> Baixar Áudio Mixado (WAV)</>}
           </button>
         </>
       )}

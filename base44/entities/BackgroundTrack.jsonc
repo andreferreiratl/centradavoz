@@ -1,0 +1,49 @@
+{
+  "name": "BackgroundTrack",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Nome da Trilha"
+    },
+    "category": {
+      "type": "string",
+      "title": "Categoria",
+      "enum": [
+        "Corporativo",
+        "Dram\u00e1tico",
+        "Alegre",
+        "Relaxante",
+        "\u00c9pico",
+        "Tecnologia",
+        "Outros"
+      ]
+    },
+    "audio_url": {
+      "type": "string",
+      "title": "URL do \u00c1udio"
+    },
+    "description": {
+      "type": "string",
+      "title": "Descri\u00e7\u00e3o"
+    },
+    "duration_seconds": {
+      "type": "number",
+      "title": "Dura\u00e7\u00e3o (seg)"
+    },
+    "is_active": {
+      "type": "boolean",
+      "title": "Ativa",
+      "default": true
+    },
+    "sort_order": {
+      "type": "number",
+      "title": "Ordem",
+      "default": 0
+    }
+  },
+  "required": [
+    "name",
+    "audio_url"
+  ]
+}
