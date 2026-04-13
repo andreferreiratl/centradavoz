@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Mic, Loader2, AlertTriangle, Download, Play, Pause, RotateCcw, Sparkles, UserCircle2, Wand2 } from "lucide-react";
+import { ArrowLeft, Loader2, AlertTriangle, Download, Play, Pause, RotateCcw, Sparkles, UserCircle2, Wand2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useSubscription } from "../lib/useSubscription";
 import GradientButton from "../components/GradientButton";
@@ -33,6 +33,21 @@ export default function GenerateAudio() {
     });
   }, []);
 
+  // Create Audio object when audioUrl changes
+  useEffect(() => {
+    if (!audioUrl) {
+      generatedAudioRef.current = null;
+      return;
+    }
+    const audio = new Audio(audioUrl);
+    audio.onended = () => setAudioPlaying(false);
+    generatedAudioRef.current = audio;
+    return () => {
+      audio.pause();
+      generatedAudioRef.current = null;
+    };
+  }, [audioUrl]);
+
   const selectedVoice = voices.find(v => v.id === selectedVoiceId) || null;
   const charCount = text.length;
 
@@ -63,7 +78,6 @@ export default function GenerateAudio() {
     setAudioUrl(null);
     setAudioPlaying(false);
     setError(null);
-    generatedAudioRef.current = null;
     setHasResult(false);
 
     const record = await base44.entities.AudioRecord.create({
@@ -133,14 +147,12 @@ export default function GenerateAudio() {
     if (errorMsg) setError(errorMsg);
     setAudioUrl(generatedUrl || null);
     setHasResult(true);
-    // Audio element will be rendered in JSX and ref assigned automatically
   };
 
   const resetResult = () => {
     setAudioUrl(null);
     setAudioPlaying(false);
     setError(null);
-    generatedAudioRef.current = null;
     setHasResult(false);
   };
 
@@ -188,7 +200,6 @@ export default function GenerateAudio() {
           <span className="font-heading font-semibold text-base">Configurações da Voz</span>
         </div>
 
-        {/* Lista de Vozes */}
         <div className="mb-3">
           <label className="block text-[10px] font-bold tracking-widest text-muted-foreground mb-1.5 uppercase">Lista de Vozes</label>
           <select
@@ -205,7 +216,6 @@ export default function GenerateAudio() {
           </select>
         </div>
 
-        {/* Tom da Voz */}
         <div>
           <label className="block text-[10px] font-bold tracking-widest text-muted-foreground mb-1.5 uppercase">Tom da Voz</label>
           {voiceStyles.length > 0 ? (
@@ -285,12 +295,6 @@ export default function GenerateAudio() {
 
           {audioUrl && (
             <>
-              <audio
-                ref={generatedAudioRef}
-                src={audioUrl}
-                onEnded={() => setAudioPlaying(false)}
-                className="hidden"
-              />
               <button
                 onClick={toggleGenerated}
                 className={cn(
