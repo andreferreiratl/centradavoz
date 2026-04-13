@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { AudioLines, FileText, CreditCard, Zap, Plus, AlertTriangle, Mic2 } from "lucide-react";
+import { AudioLines, FileText, CreditCard, Zap, Plus, AlertTriangle } from "lucide-react";
 import Logo from "../components/Logo";
 import { base44 } from "@/api/base44Client";
 import { useSubscription } from "../lib/useSubscription";
@@ -45,11 +45,8 @@ export default function Dashboard() {
               Admin
             </Link>
           )}
-          <div className="relative w-10 h-10 rounded-full gradient-primary flex items-center justify-center glow-primary flex-shrink-0">
-            <Mic2 className="w-5 h-5 text-white" />
-            <span className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-secondary flex items-center justify-center text-[10px] font-bold text-background">
-              {(user?.full_name || "U")[0].toUpperCase()}
-            </span>
+          <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-white font-heading font-bold">
+            {(user?.full_name || "U")[0]}
           </div>
         </div>
       </div>
