@@ -6,9 +6,9 @@ export default function Logo({ size = "default" }) {
     <Link to="/" className="flex items-center select-none">
       <img
         src="https://media.base44.com/images/public/69da50375cc9660ed0fab63a/c9d2e48da_file_000000009a48720eaaa61bf4a204e45c.png"
-        alt="Central da Voz"
-        className={isSmall ? "h-12 w-auto object-contain" : "h-16 w-auto object-contain"}
-      />
-    </Link>
-  );
+        alt="Central da Voz" className="mx-3 h-16 w-auto object-contain" />
+
+      
+    </Link>);
+
 }
