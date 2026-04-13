@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { AudioLines, FileText, CreditCard, Zap, Plus, AlertTriangle } from "lucide-react";
+import { AudioLines, FileText, CreditCard, Zap, Plus, AlertTriangle, RotateCcw } from "lucide-react";
 import Logo from "../components/Logo";
 import { base44 } from "@/api/base44Client";
 import { useSubscription } from "../lib/useSubscription";
@@ -12,6 +12,28 @@ import { Progress } from "@/components/ui/progress";
 export default function Dashboard() {
   const { subscription, loading, user, isActive, remainingChars } = useSubscription();
   const [audioCount, setAudioCount] = useState(0);
+  const [resetting, setResetting] = useState(false);
+
+  const handleReset = async () => {
+    if (!confirm("Zerar todos os áudios gerados e caracteres utilizados? Esta ação não pode ser desfeita.")) return;
+    setResetting(true);
+    const audios = await base44.entities.AudioRecord.filter({ user_email: user.email });
+    for (const a of audios) await base44.entities.AudioRecord.delete(a.id);
+    if (subscription) await base44.entities.Subscription.update(subscription.id, { characters_used: 0 });
+    setAudioCount(0);
+    window.location.reload();
+  };
+  const [resetting, setResetting] = useState(false);
+
+  const handleReset = async () => {
+    if (!confirm("Zerar todos os áudios gerados e caracteres utilizados? Esta ação não pode ser desfeita.")) return;
+    setResetting(true);
+    const audios = await base44.entities.AudioRecord.filter({ user_email: user.email });
+    for (const a of audios) await base44.entities.AudioRecord.delete(a.id);
+    if (subscription) await base44.entities.Subscription.update(subscription.id, { characters_used: 0 });
+    setAudioCount(0);
+    window.location.reload();
+  };
 
   useEffect(() => {
     async function loadAudios() {
@@ -98,6 +120,16 @@ export default function Dashboard() {
         </div>
       }
 
+      {/* Reset Button */}
+      <button
+        onClick={handleReset}
+        disabled={resetting}
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-muted hover:bg-destructive/10 border border-border hover:border-destructive/30 text-muted-foreground hover:text-destructive text-sm font-medium transition-all mt-4 mb-3 disabled:opacity-50"
+      >
+        <RotateCcw className="w-4 h-4" />
+        {resetting ? "Zerando..." : "Zerar áudios e caracteres"}
+      </button>
+
       {/* Quick Actions */}
       <Link to="/generate">
         <div className="gradient-primary rounded-2xl p-5 flex items-center justify-between glow-primary active:scale-[0.98] transition-transform">
@@ -109,5 +141,7 @@ export default function Dashboard() {
         </div>
       </Link>
     </div>);
+
+}
 
 }
