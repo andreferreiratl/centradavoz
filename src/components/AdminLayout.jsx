@@ -18,28 +18,28 @@ export default function AdminLayout() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden text-muted-foreground hover:text-foreground"
-              >
+                className="lg:hidden text-muted-foreground hover:text-foreground">
+                
                 <Menu className="w-6 h-6" />
               </button>
               <div className="flex items-center gap-2 lg:hidden">
                 <div className="w-7 h-7 rounded-lg gradient-primary flex items-center justify-center">
                   <AudioLines className="w-3.5 h-3.5 text-white" />
                 </div>
-                <span className="font-heading font-bold">VozPro Admin</span>
+                <span className="font-heading font-bold">Centrald  Admin</span>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={() => navigate("/dashboard")}
-                className="text-xs text-muted-foreground hover:text-secondary transition-colors"
-              >
+                className="text-xs text-muted-foreground hover:text-secondary transition-colors">
+                
                 Área do Usuário
               </button>
               <button
                 onClick={() => base44.auth.logout()}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
+                className="text-muted-foreground hover:text-foreground transition-colors">
+                
                 <LogOut className="w-5 h-5" />
               </button>
             </div>
@@ -50,6 +50,6 @@ export default function AdminLayout() {
           <Outlet />
         </main>
       </div>
-    </div>
-  );
+    </div>);
+
 }
