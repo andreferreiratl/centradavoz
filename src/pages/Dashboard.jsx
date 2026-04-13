@@ -26,13 +26,13 @@ export default function Dashboard() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-      </div>
-    );
+      </div>);
+
   }
 
-  const usagePercent = subscription
-    ? Math.min(100, ((subscription.characters_used || 0) / subscription.character_limit) * 100)
-    : 0;
+  const usagePercent = subscription ?
+  Math.min(100, (subscription.characters_used || 0) / subscription.character_limit * 100) :
+  0;
 
   return (
     <div className="px-4 pt-6">
@@ -40,11 +40,11 @@ export default function Dashboard() {
       <div className="flex items-center justify-between mb-6">
         <Logo />
         <div className="flex items-center gap-2">
-          {user?.role === "admin" && (
-            <Link to="/admin" className="text-xs text-secondary hover:underline">
+          {user?.role === "admin" &&
+          <Link to="/admin" className="text-xs text-secondary hover:underline">
               Admin
             </Link>
-          )}
+          }
           <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-white font-heading font-bold">
             {(user?.full_name || "U")[0]}
           </div>
@@ -52,8 +52,8 @@ export default function Dashboard() {
       </div>
 
       {/* Subscription Warning */}
-      {!isActive && (
-        <div className="glass-card rounded-2xl p-4 mb-4 border-yellow-500/30 bg-yellow-500/5">
+      {!isActive &&
+      <div className="glass-card rounded-2xl p-4 mb-4 border-yellow-500/30 bg-yellow-500/5">
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
             <div>
@@ -62,12 +62,12 @@ export default function Dashboard() {
                 {subscription ? "Sua assinatura expirou." : "Você não possui um plano ativo."} Assine um plano para começar a gerar áudios.
               </p>
               <Link to="/plans">
-                <GradientButton size="sm" className="mt-3">Ver Planos</GradientButton>
+                <GradientButton size="sm" className="font-heading font-semibold rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none px-4 py-2 text-sm gradient-primary hover:gradient-primary-hover text-white glow-primary mt-3">Ver Planos</GradientButton>
               </Link>
             </div>
           </div>
         </div>
-      )}
+      }
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3 mb-6">
@@ -78,8 +78,8 @@ export default function Dashboard() {
       </div>
 
       {/* Usage Bar */}
-      {subscription && (
-        <div className="glass-card rounded-2xl p-4 mb-6">
+      {subscription &&
+      <div className="glass-card rounded-2xl p-4 mb-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">Uso de Caracteres</span>
             <span className="text-xs text-muted-foreground">{usagePercent.toFixed(0)}%</span>
@@ -89,14 +89,14 @@ export default function Dashboard() {
             <span className="text-xs text-muted-foreground">{(subscription.characters_used || 0).toLocaleString()} usados</span>
             <span className="text-xs text-muted-foreground">{subscription.character_limit.toLocaleString()} total</span>
           </div>
-          {subscription && (
-            <div className="mt-3 flex items-center gap-2">
+          {subscription &&
+        <div className="mt-3 flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Status:</span>
               <StatusBadge status={subscription.status} />
             </div>
-          )}
+        }
         </div>
-      )}
+      }
 
       {/* Quick Actions */}
       <Link to="/generate">
@@ -108,6 +108,6 @@ export default function Dashboard() {
           <Plus className="w-8 h-8 text-white" />
         </div>
       </Link>
-    </div>
-  );
+    </div>);
+
 }
