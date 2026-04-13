@@ -113,7 +113,15 @@ export default function AudioMixer({ generatedAudioUrl }) {
     bgSrc.start(0);
     setIsPlaying(true);
 
-    mainSrc.onended = () => { if (audioCtxRef.current) stopPlayback(); };
+    // After main ends: raise bg for 1s then fade out over 1s
+    mainSrc.onended = () => {
+      if (!audioCtxRef.current) return;
+      const now = ctx.currentTime;
+      bgGain.gain.setValueAtTime(bgVolume / 100, now);
+      bgGain.gain.linearRampToValueAtTime(1.0, now + 1.0);
+      bgGain.gain.linearRampToValueAtTime(0, now + 2.0);
+      setTimeout(() => stopPlayback(), 2100);
+    };
   };
 
   const handleExport = async () => {
@@ -140,20 +148,39 @@ export default function AudioMixer({ generatedAudioUrl }) {
     mainSrc.buffer = mainBuf;
     mainSrc.connect(mainGain).connect(offlineCtx.destination);
 
-    // Trim or loop bg to match main length
+    // Extra 2s after main: 1s raise bg + 1s fade out
+    const extraSamples = sampleRate * 2;
+    const totalLength = length + extraSamples;
+    const offlineCtx2 = new OfflineAudioContext(1, totalLength, sampleRate);
+
+    const mainGain2 = offlineCtx2.createGain();
+    mainGain2.gain.value = mainVolume / 100;
+    const bgGain2 = offlineCtx2.createGain();
+    bgGain2.gain.value = bgVolume / 100;
+
+    const mainDuration = length / sampleRate;
+    // Raise bg to 1.0 over 1s after main ends, then fade to 0 over 1s
+    bgGain2.gain.setValueAtTime(bgVolume / 100, mainDuration);
+    bgGain2.gain.linearRampToValueAtTime(1.0, mainDuration + 1.0);
+    bgGain2.gain.linearRampToValueAtTime(0, mainDuration + 2.0);
+
     const bgData = bgBuf.getChannelData(0);
-    const loopedBg = offlineCtx.createBuffer(1, length, sampleRate);
+    const loopedBg = offlineCtx2.createBuffer(1, totalLength, sampleRate);
     const loopedData = loopedBg.getChannelData(0);
-    for (let i = 0; i < length; i++) loopedData[i] = bgData[i % bgData.length];
+    for (let i = 0; i < totalLength; i++) loopedData[i] = bgData[i % bgData.length];
 
-    const bgSrc = offlineCtx.createBufferSource();
-    bgSrc.buffer = loopedBg;
-    bgSrc.connect(bgGain).connect(offlineCtx.destination);
+    const mainSrc2 = offlineCtx2.createBufferSource();
+    mainSrc2.buffer = mainBuf;
+    mainSrc2.connect(mainGain2).connect(offlineCtx2.destination);
 
-    mainSrc.start(0);
-    bgSrc.start(0);
+    const bgSrc2 = offlineCtx2.createBufferSource();
+    bgSrc2.buffer = loopedBg;
+    bgSrc2.connect(bgGain2).connect(offlineCtx2.destination);
 
-    const rendered = await offlineCtx.startRendering();
+    mainSrc2.start(0);
+    bgSrc2.start(0);
+
+    const rendered = await offlineCtx2.startRendering();
     const wav = encodeWAV(rendered.getChannelData(0), sampleRate);
 
     const blob = new Blob([wav], { type: "audio/wav" });
