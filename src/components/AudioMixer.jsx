@@ -65,8 +65,13 @@ function TimingField({ label, icon: Icon, value, onChange }) {
   );
 }
 
+// Volume da trilha durante o áudio gerado (ducking): 30% do volume original
+const DUCK_RATIO = 0.3;
+// Tempo de transição para o ducking (em segundos)
+const DUCK_FADE = 0.8;
+
 export default function AudioMixer({ generatedAudioUrl }) {
-  const [mode, setMode] = useState("library"); // "library" | "device"
+  const [mode, setMode] = useState("library");
   const [catalogTracks, setCatalogTracks] = useState([]);
   const [selectedTrackId, setSelectedTrackId] = useState("");
   const [bgFile, setBgFile] = useState(null);
@@ -84,7 +89,6 @@ export default function AudioMixer({ generatedAudioUrl }) {
   const mainGainRef = useRef(null);
   const bgGainRef = useRef(null);
   const fileInputRef = useRef(null);
-  const mainBufRef = useRef(null);
 
   useEffect(() => {
     base44.entities.BackgroundTrack.filter({ is_active: true }, "sort_order").then(setCatalogTracks);
@@ -129,14 +133,12 @@ export default function AudioMixer({ generatedAudioUrl }) {
       loadAudioBuffer(ctx, generatedAudioUrl),
       loadAudioBuffer(ctx, activeBgUrl),
     ]);
-    mainBufRef.current = mainBuf;
 
     const mainGain = ctx.createGain();
     mainGain.gain.value = mainVolume / 100;
     mainGainRef.current = mainGain;
 
     const bgGain = ctx.createGain();
-    bgGain.gain.value = bgVolume / 100;
     bgGainRef.current = bgGain;
 
     const mainSrc = ctx.createBufferSource();
@@ -151,20 +153,36 @@ export default function AudioMixer({ generatedAudioUrl }) {
     mainSourceRef.current = mainSrc;
     bgSourceRef.current = bgSrc;
 
-    // BG starts immediately, main audio starts after offset
+    const bgFull = bgVolume / 100;
+    const bgDucked = bgFull * DUCK_RATIO;
+    const now = ctx.currentTime;
+    const mainStart = now + mainAudioStartOffset;
+    const mainEnd = mainStart + mainBuf.duration;
+
+    // BG começa no volume cheio
+    bgGain.gain.setValueAtTime(bgFull, now);
+
+    if (mainAudioStartOffset > DUCK_FADE) {
+      // Abaixa antes do áudio principal começar
+      bgGain.gain.linearRampToValueAtTime(bgDucked, mainStart - 0.1);
+    } else {
+      bgGain.gain.linearRampToValueAtTime(bgDucked, mainStart + DUCK_FADE);
+    }
+
+    // Sobe de volta ao volume cheio quando o áudio principal termina
+    bgGain.gain.linearRampToValueAtTime(bgFull, mainEnd + DUCK_FADE);
+
+    // Mantém o volume cheio durante o bgExtraAfterMain, então fade final 1s antes
+    const fadeOutStart = mainEnd + Math.max(bgExtraAfterMain - 1, 0);
+    const fadeOutEnd = mainEnd + bgExtraAfterMain;
+    bgGain.gain.linearRampToValueAtTime(bgFull, fadeOutStart);
+    bgGain.gain.linearRampToValueAtTime(0, fadeOutEnd);
+
     bgSrc.start(0);
-    mainSrc.start(ctx.currentTime + mainAudioStartOffset);
+    mainSrc.start(mainStart);
     setIsPlaying(true);
 
-    mainSrc.onended = () => {
-      if (!audioCtxRef.current) return;
-      const now = ctx.currentTime;
-      const fadeStart = now;
-      const fadeDuration = Math.max(bgExtraAfterMain, 1);
-      bgGain.gain.setValueAtTime(bgVolume / 100, fadeStart);
-      bgGain.gain.linearRampToValueAtTime(0, fadeStart + fadeDuration);
-      setTimeout(() => stopPlayback(), (fadeDuration + 0.2) * 1000);
-    };
+    setTimeout(() => stopPlayback(), (fadeOutEnd - now + 0.2) * 1000);
   };
 
   const handleExport = async () => {
@@ -187,13 +205,32 @@ export default function AudioMixer({ generatedAudioUrl }) {
 
     const mainGain = offlineCtx.createGain();
     mainGain.gain.value = mainVolume / 100;
-    const bgGain = offlineCtx.createGain();
-    bgGain.gain.value = bgVolume / 100;
 
-    // BG fade out starts after main ends, lasts bgExtraAfterMain seconds
-    const mainEndTime = mainAudioStartOffset + mainDuration;
-    bgGain.gain.setValueAtTime(bgVolume / 100, mainEndTime);
-    bgGain.gain.linearRampToValueAtTime(0, mainEndTime + bgExtraAfterMain);
+    const bgGain = offlineCtx.createGain();
+
+    const bgFull = bgVolume / 100;
+    const bgDucked = bgFull * DUCK_RATIO;
+
+    const mainStart = mainAudioStartOffset;
+    const mainEnd = mainStart + mainDuration;
+
+    // BG começa no volume cheio
+    bgGain.gain.setValueAtTime(bgFull, 0);
+
+    if (mainAudioStartOffset > DUCK_FADE) {
+      bgGain.gain.linearRampToValueAtTime(bgDucked, mainStart - 0.1);
+    } else {
+      bgGain.gain.linearRampToValueAtTime(bgDucked, mainStart + DUCK_FADE);
+    }
+
+    // Sobe de volta ao volume cheio quando o áudio principal termina
+    bgGain.gain.linearRampToValueAtTime(bgFull, mainEnd + DUCK_FADE);
+
+    // Fade final: 1 segundo antes do fim da trilha
+    const fadeOutStart = mainEnd + Math.max(bgExtraAfterMain - 1, 0);
+    const fadeOutEnd = mainEnd + bgExtraAfterMain;
+    bgGain.gain.linearRampToValueAtTime(bgFull, fadeOutStart);
+    bgGain.gain.linearRampToValueAtTime(0, fadeOutEnd);
 
     const bgData = bgBuf.getChannelData(0);
     const loopedBg = offlineCtx.createBuffer(1, totalLength, sampleRate);
