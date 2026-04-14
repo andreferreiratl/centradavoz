@@ -105,6 +105,7 @@ export default function AudioMixer({ generatedAudioUrl }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [previewingTrackId, setPreviewingTrackId] = useState(null);
+  const [trackListCollapsed, setTrackListCollapsed] = useState(false);
 
   const audioCtxRef = useRef(null);
   const mainSourceRef = useRef(null);
@@ -374,6 +375,17 @@ export default function AudioMixer({ generatedAudioUrl }) {
         <div className="mb-3">
           {catalogTracks.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-3">Nenhuma trilha cadastrada ainda.</p>
+          ) : trackListCollapsed ? (
+            <div
+              onClick={() => setTrackListCollapsed(false)}
+              className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-primary/40 bg-primary/10 cursor-pointer hover:bg-primary/15 transition-all"
+            >
+              <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
+              <span className="text-xs font-medium flex-1 truncate">
+                {catalogTracks.find(t => t.id === selectedTrackId)?.name || "Trilha selecionada"}
+              </span>
+              <span className="text-[10px] text-muted-foreground">Trocar</span>
+            </div>
           ) : (
             <div className="space-y-2">
               {catalogTracks.map(t => (
@@ -381,7 +393,11 @@ export default function AudioMixer({ generatedAudioUrl }) {
                   key={t.id}
                   track={t}
                   selected={selectedTrackId === t.id}
-                  onSelect={() => { setSelectedTrackId(t.id); stopPlayback(); }}
+                  onSelect={() => {
+                    setSelectedTrackId(t.id);
+                    stopPlayback();
+                    setTrackListCollapsed(true);
+                  }}
                   previewingId={previewingTrackId}
                   onPreview={handleTrackPreview}
                 />
