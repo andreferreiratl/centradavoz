@@ -34,7 +34,7 @@ export default function Landing() {
           <motion.div className="text-center max-w-2xl mx-auto" {...fadeUp}>
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-6">
               <Mic className="w-3.5 h-3.5 text-primary" />
-              <span className="text-xs font-medium text-primary">Mais de 60 locuto</span>
+              <span className="text-xs font-medium text-primary">Mais de 60 locutores</span>
             </div>
             
             <h1 className="font-heading text-4xl md:text-6xl font-bold leading-tight mb-4 tracking-tight">
