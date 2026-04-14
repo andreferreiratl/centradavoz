@@ -175,7 +175,7 @@ export default function GenerateAudio() {
           <button onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="font-heading text-xl font-bold">Gerar Áudio</h1>
+          <h1 className="font-heading text-xl font-bold">Gerar Locução</h1>
         </div>
         <img
           src="https://media.base44.com/images/public/69da50375cc9660ed0fab63a/c9d2e48da_file_000000009a48720eaaa61bf4a204e45c.png"
