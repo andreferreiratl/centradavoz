@@ -276,6 +276,7 @@ export default function AudioMixer({ generatedAudioUrl }) {
     URL.revokeObjectURL(url);
 
     setExporting(false);
+    setTimeout(() => window.location.reload(), 1500);
   };
 
   const removeBg = () => {
