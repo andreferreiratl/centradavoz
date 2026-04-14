@@ -3,13 +3,17 @@ import BottomNav from "./BottomNav";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { LogOut, ShieldCheck } from "lucide-react";
+import useInactivityLogout from "@/hooks/useInactivityLogout";
+import InactivityWarning from "./InactivityWarning";
 
 export default function UserLayout() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+  const { showWarning, secondsLeft, stayActive } = useInactivityLogout();
 
   return (
     <div className="min-h-screen bg-background">
+      {showWarning && <InactivityWarning secondsLeft={secondsLeft} onStayActive={stayActive} />}
       <header className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border/20">
         <div className="flex items-center justify-between px-4 py-2 max-w-xl mx-auto">
           
