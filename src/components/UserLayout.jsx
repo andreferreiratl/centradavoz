@@ -5,11 +5,13 @@ import { useAuth } from "@/lib/AuthContext";
 import { LogOut, ShieldCheck } from "lucide-react";
 import useInactivityLogout from "@/hooks/useInactivityLogout";
 import InactivityWarning from "./InactivityWarning";
+import useSingleSession from "@/hooks/useSingleSession";
 
 export default function UserLayout() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const { showWarning, secondsLeft, stayActive } = useInactivityLogout();
+  useSingleSession();
 
   return (
     <div className="min-h-screen bg-background">

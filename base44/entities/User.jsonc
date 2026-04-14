@@ -10,6 +10,11 @@
         "user"
       ],
       "default": "user"
+    },
+    "session_token": {
+      "type": "string",
+      "title": "Token de Sess\u00e3o Ativa"
     }
-  }
+  },
+  "required": []
 }
