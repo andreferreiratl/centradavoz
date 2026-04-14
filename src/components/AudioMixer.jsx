@@ -65,10 +65,10 @@ function TimingField({ label, icon: Icon, value, onChange }) {
   );
 }
 
-// Volume da trilha durante o áudio gerado (ducking): 30% do volume original
-const DUCK_RATIO = 0.3;
-// Tempo de transição para o ducking (em segundos)
-const DUCK_FADE = 0.8;
+// Trilha abaixa para 20% do volume definido enquanto o áudio gerado toca
+const DUCK_RATIO = 0.2;
+// Duração da transição de ducking (fade suave)
+const DUCK_FADE = 1.0;
 
 export default function AudioMixer({ generatedAudioUrl }) {
   const [mode, setMode] = useState("library");
@@ -99,8 +99,8 @@ export default function AudioMixer({ generatedAudioUrl }) {
     : bgObjectUrl;
 
   const stopPlayback = useCallback(() => {
-    mainSourceRef.current?.stop();
-    bgSourceRef.current?.stop();
+    try { mainSourceRef.current?.stop(); } catch (_) {}
+    try { bgSourceRef.current?.stop(); } catch (_) {}
     mainSourceRef.current = null;
     bgSourceRef.current = null;
     audioCtxRef.current?.close();
@@ -111,7 +111,6 @@ export default function AudioMixer({ generatedAudioUrl }) {
   useEffect(() => () => stopPlayback(), [stopPlayback]);
 
   useEffect(() => { if (mainGainRef.current) mainGainRef.current.gain.value = mainVolume / 100; }, [mainVolume]);
-  useEffect(() => { if (bgGainRef.current) bgGainRef.current.gain.value = bgVolume / 100; }, [bgVolume]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -156,33 +155,44 @@ export default function AudioMixer({ generatedAudioUrl }) {
     const bgFull = bgVolume / 100;
     const bgDucked = bgFull * DUCK_RATIO;
     const now = ctx.currentTime;
-    const mainStart = now + mainAudioStartOffset;
-    const mainEnd = mainStart + mainBuf.duration;
 
-    // BG começa no volume cheio
+    // Tempo absoluto em que o áudio gerado começa
+    const mainStartAt = now + mainAudioStartOffset;
+    const mainDuration = mainBuf.duration;
+
+    // --- Automação de volume da trilha de fundo ---
+    // 1. Começa no volume cheio
     bgGain.gain.setValueAtTime(bgFull, now);
 
-    if (mainAudioStartOffset > DUCK_FADE) {
-      // Abaixa antes do áudio principal começar
-      bgGain.gain.linearRampToValueAtTime(bgDucked, mainStart - 0.1);
-    } else {
-      bgGain.gain.linearRampToValueAtTime(bgDucked, mainStart + DUCK_FADE);
-    }
+    // 2. Abaixa suavemente antes do áudio gerado iniciar (duck down)
+    const duckDownEnd = mainStartAt;
+    const duckDownStart = Math.max(now, mainStartAt - DUCK_FADE);
+    bgGain.gain.setValueAtTime(bgFull, duckDownStart);
+    bgGain.gain.linearRampToValueAtTime(bgDucked, duckDownEnd);
 
-    // Sobe de volta ao volume cheio quando o áudio principal termina
-    bgGain.gain.linearRampToValueAtTime(bgFull, mainEnd + DUCK_FADE);
+    // 3. Mantém volume baixo durante o áudio gerado
+    bgGain.gain.setValueAtTime(bgDucked, duckDownEnd);
 
-    // Mantém o volume cheio durante o bgExtraAfterMain, então fade final 1s antes
-    const fadeOutStart = mainEnd + Math.max(bgExtraAfterMain - 1, 0);
-    const fadeOutEnd = mainEnd + bgExtraAfterMain;
+    // 4. Sobe de volta ao volume cheio logo após o áudio gerado terminar
+    const mainEndAt = mainStartAt + mainDuration;
+    bgGain.gain.linearRampToValueAtTime(bgFull, mainEndAt + DUCK_FADE);
+
+    // 5. Mantém no volume cheio pelo tempo extra configurado
+    // 6. Fade final: começa 1s antes do fim
+    const extra = Math.max(bgExtraAfterMain, 0);
+    const fadeOutEnd = mainEndAt + DUCK_FADE + extra;
+    const fadeOutStart = Math.max(mainEndAt + DUCK_FADE, fadeOutEnd - 1.0);
+    bgGain.gain.setValueAtTime(bgFull, mainEndAt + DUCK_FADE);
     bgGain.gain.linearRampToValueAtTime(bgFull, fadeOutStart);
     bgGain.gain.linearRampToValueAtTime(0, fadeOutEnd);
 
     bgSrc.start(0);
-    mainSrc.start(mainStart);
+    mainSrc.start(mainStartAt);
     setIsPlaying(true);
 
-    setTimeout(() => stopPlayback(), (fadeOutEnd - now + 0.2) * 1000);
+    // Para a reprodução logo após o fade final
+    const totalMs = (fadeOutEnd - now + 0.1) * 1000;
+    setTimeout(() => stopPlayback(), totalMs);
   };
 
   const handleExport = async () => {
@@ -198,7 +208,10 @@ export default function AudioMixer({ generatedAudioUrl }) {
 
     const sampleRate = mainBuf.sampleRate;
     const mainDuration = mainBuf.duration;
-    const totalDuration = mainAudioStartOffset + mainDuration + bgExtraAfterMain;
+
+    // Duração total = offset + áudio gerado + duck up + extra + fade
+    const extra = Math.max(bgExtraAfterMain, 0);
+    const totalDuration = mainAudioStartOffset + mainDuration + DUCK_FADE + extra;
     const totalLength = Math.ceil(totalDuration * sampleRate);
 
     const offlineCtx = new OfflineAudioContext(1, totalLength, sampleRate);
@@ -211,27 +224,31 @@ export default function AudioMixer({ generatedAudioUrl }) {
     const bgFull = bgVolume / 100;
     const bgDucked = bgFull * DUCK_RATIO;
 
-    const mainStart = mainAudioStartOffset;
-    const mainEnd = mainStart + mainDuration;
+    const mainStartAt = mainAudioStartOffset;
+    const mainEndAt = mainStartAt + mainDuration;
 
-    // BG começa no volume cheio
+    // 1. Começa no volume cheio
     bgGain.gain.setValueAtTime(bgFull, 0);
 
-    if (mainAudioStartOffset > DUCK_FADE) {
-      bgGain.gain.linearRampToValueAtTime(bgDucked, mainStart - 0.1);
-    } else {
-      bgGain.gain.linearRampToValueAtTime(bgDucked, mainStart + DUCK_FADE);
-    }
+    // 2. Duck down ao iniciar o áudio gerado
+    const duckDownStart = Math.max(0, mainStartAt - DUCK_FADE);
+    bgGain.gain.setValueAtTime(bgFull, duckDownStart);
+    bgGain.gain.linearRampToValueAtTime(bgDucked, mainStartAt);
 
-    // Sobe de volta ao volume cheio quando o áudio principal termina
-    bgGain.gain.linearRampToValueAtTime(bgFull, mainEnd + DUCK_FADE);
+    // 3. Mantém ducked durante o áudio gerado
+    bgGain.gain.setValueAtTime(bgDucked, mainStartAt);
 
-    // Fade final: 1 segundo antes do fim da trilha
-    const fadeOutStart = mainEnd + Math.max(bgExtraAfterMain - 1, 0);
-    const fadeOutEnd = mainEnd + bgExtraAfterMain;
+    // 4. Sobe ao volume cheio após o áudio gerado terminar
+    bgGain.gain.linearRampToValueAtTime(bgFull, mainEndAt + DUCK_FADE);
+
+    // 5. Mantém cheio e faz fade final 1s antes do fim
+    const fadeOutEnd = mainEndAt + DUCK_FADE + extra;
+    const fadeOutStart = Math.max(mainEndAt + DUCK_FADE, fadeOutEnd - 1.0);
+    bgGain.gain.setValueAtTime(bgFull, mainEndAt + DUCK_FADE);
     bgGain.gain.linearRampToValueAtTime(bgFull, fadeOutStart);
     bgGain.gain.linearRampToValueAtTime(0, fadeOutEnd);
 
+    // Criar buffer de BG em loop para cobrir toda a duração
     const bgData = bgBuf.getChannelData(0);
     const loopedBg = offlineCtx.createBuffer(1, totalLength, sampleRate);
     const loopedData = loopedBg.getChannelData(0);
