@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Music, Upload, Volume2, Play, Pause, X, Download, Loader2, Library, Timer, Clock } from "lucide-react";
+import { Music, Upload, Volume2, Play, Pause, X, Download, Loader2, Library, Timer, Clock, Headphones, CheckCircle2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 function encodeWAV(samples, sampleRate) {
@@ -65,6 +65,28 @@ function TimingField({ label, icon: Icon, value, onChange }) {
   );
 }
 
+function TrackPreviewRow({ track, selected, onSelect, previewingId, onPreview }) {
+  const isPreviewing = previewingId === track.id;
+  return (
+    <div
+      onClick={onSelect}
+      className={`flex items-center gap-2 px-3 py-2.5 rounded-xl cursor-pointer border transition-all ${selected ? "border-primary/60 bg-primary/10" : "border-border bg-muted hover:border-primary/30"}`}
+    >
+      {selected && <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />}
+      <div className="flex-1 min-w-0">
+        {track.category && <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">{track.category} · </span>}
+        <span className="text-xs font-medium truncate">{track.name}</span>
+      </div>
+      <button
+        onClick={(e) => { e.stopPropagation(); onPreview(track.id, track.audio_url); }}
+        className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold border transition-all flex-shrink-0 ${isPreviewing ? "bg-secondary/20 border-secondary/50 text-secondary" : "bg-muted border-border text-muted-foreground hover:text-foreground hover:border-primary/30"}`}
+      >
+        {isPreviewing ? <><Pause className="w-3 h-3" /> Pausar</> : <><Headphones className="w-3 h-3" /> Ouvir</>}
+      </button>
+    </div>
+  );
+}
+
 // Trilha abaixa para 20% do volume definido enquanto o áudio gerado toca
 const DUCK_RATIO = 0.2;
 // Duração da transição de ducking (fade suave)
@@ -82,6 +104,7 @@ export default function AudioMixer({ generatedAudioUrl }) {
   const [bgExtraAfterMain, setBgExtraAfterMain] = useState(3);
   const [isPlaying, setIsPlaying] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [previewingTrackId, setPreviewingTrackId] = useState(null);
 
   const audioCtxRef = useRef(null);
   const mainSourceRef = useRef(null);
@@ -89,6 +112,7 @@ export default function AudioMixer({ generatedAudioUrl }) {
   const mainGainRef = useRef(null);
   const bgGainRef = useRef(null);
   const fileInputRef = useRef(null);
+  const previewAudioRef = useRef(null);
 
   useEffect(() => {
     base44.entities.BackgroundTrack.filter({ is_active: true }, "sort_order").then(setCatalogTracks);
@@ -111,6 +135,27 @@ export default function AudioMixer({ generatedAudioUrl }) {
   useEffect(() => () => stopPlayback(), [stopPlayback]);
 
   useEffect(() => { if (mainGainRef.current) mainGainRef.current.gain.value = mainVolume / 100; }, [mainVolume]);
+
+  const handleTrackPreview = (trackId, audioUrl) => {
+    // Se já está tocando esta trilha, para
+    if (previewingTrackId === trackId) {
+      previewAudioRef.current?.pause();
+      previewAudioRef.current = null;
+      setPreviewingTrackId(null);
+      return;
+    }
+    // Para qualquer preview em andamento
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      previewAudioRef.current = null;
+    }
+    // Inicia o novo preview
+    const audio = new Audio(audioUrl);
+    audio.play();
+    audio.onended = () => setPreviewingTrackId(null);
+    previewAudioRef.current = audio;
+    setPreviewingTrackId(trackId);
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -330,18 +375,18 @@ export default function AudioMixer({ generatedAudioUrl }) {
           {catalogTracks.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-3">Nenhuma trilha cadastrada ainda.</p>
           ) : (
-            <select
-              value={selectedTrackId}
-              onChange={(e) => { setSelectedTrackId(e.target.value); stopPlayback(); }}
-              className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 appearance-none cursor-pointer"
-            >
-              <option value="">— Selecione uma trilha —</option>
+            <div className="space-y-2">
               {catalogTracks.map(t => (
-                <option key={t.id} value={t.id}>
-                  {t.category ? `[${t.category}] ` : ""}{t.name}
-                </option>
+                <TrackPreviewRow
+                  key={t.id}
+                  track={t}
+                  selected={selectedTrackId === t.id}
+                  onSelect={() => { setSelectedTrackId(t.id); stopPlayback(); }}
+                  previewingId={previewingTrackId}
+                  onPreview={handleTrackPreview}
+                />
               ))}
-            </select>
+            </div>
           )}
         </div>
       )}
