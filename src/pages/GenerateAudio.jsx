@@ -206,7 +206,7 @@ export default function GenerateAudio() {
         </div>
 
         <div className="mb-3">
-          <label className="block text-[10px] font-bold tracking-widest text-muted-foreground mb-1.5 uppercase">Lista de Vozes</label>
+          <label className="block text-[10px] font-bold tracking-widest text-muted-foreground mb-1.5 uppercase">Lista de locutores</label>
           <select
             value={selectedVoiceId}
             onChange={(e) => setSelectedVoiceId(e.target.value)}
