@@ -6,6 +6,7 @@ import { LogOut, ShieldCheck } from "lucide-react";
 import useInactivityLogout from "@/hooks/useInactivityLogout";
 import InactivityWarning from "./InactivityWarning";
 import useSingleSession from "@/hooks/useSingleSession";
+import InstallAppBanner from "./InstallAppBanner";
 
 export default function UserLayout() {
   const { user } = useAuth();
@@ -16,6 +17,7 @@ export default function UserLayout() {
   return (
     <div className="min-h-screen bg-background">
       {showWarning && <InactivityWarning secondsLeft={secondsLeft} onStayActive={stayActive} />}
+      <InstallAppBanner />
       <header className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border/20">
         <div className="flex items-center justify-between px-4 py-2 max-w-xl mx-auto">
           
