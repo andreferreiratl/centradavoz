@@ -45,8 +45,8 @@ export default function Landing() {
               de alta qualidade
             </h1>
             
-            <p className="text-muted-foreground text-lg md:text-xl mb-8 leading-relaxed">
-              Crie narrações para vídeos, anúncios e redes sociais em segundos
+            <p className="text-muted-foreground text-lg md:text-xl mb-8 leading-relaxed">Crie narrações para vídeos, spots comerci redes sociais em segundos
+
             </p>
             
             <Link to="/dashboard">
