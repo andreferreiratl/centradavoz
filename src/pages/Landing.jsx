@@ -39,7 +39,7 @@ export default function Landing() {
             
             <h1 className="font-heading text-4xl md:text-6xl font-bold leading-tight mb-4 tracking-tight">
               Transforme textos em{" "}
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#6C3BFF] to-[#00E0FF]">Locuções profissionais
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#6C3BFF] to-[#00E0FF]">Locuções Profissionais
 
               </span>{" "}
               de alta qualidade
