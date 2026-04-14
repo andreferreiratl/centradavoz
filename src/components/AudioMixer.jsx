@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Music, Upload, Volume2, Play, Pause, X, Download, Loader2, Library } from "lucide-react";
+import { Music, Upload, Volume2, Play, Pause, X, Download, Loader2, Library, Timer, Clock } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 function encodeWAV(samples, sampleRate) {
@@ -32,6 +32,39 @@ async function loadAudioBuffer(audioCtx, url) {
   return audioCtx.decodeAudioData(arrayBuffer);
 }
 
+function TimingField({ label, icon: Icon, value, onChange }) {
+  return (
+    <div className="flex-1 bg-muted rounded-xl p-3 flex flex-col gap-2">
+      <div className="flex items-center gap-1.5">
+        <Icon className="w-3.5 h-3.5 text-secondary" />
+        <span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">{label}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          type="number"
+          min="0"
+          max="180"
+          value={value}
+          onChange={(e) => {
+            const v = Math.max(0, Math.min(180, Number(e.target.value)));
+            onChange(v);
+          }}
+          className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm font-semibold text-center text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+        />
+        <span className="text-xs text-muted-foreground font-medium flex-shrink-0">seg</span>
+      </div>
+      <input
+        type="range"
+        min="0"
+        max="180"
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full h-1.5 rounded-full accent-secondary cursor-pointer"
+      />
+    </div>
+  );
+}
+
 export default function AudioMixer({ generatedAudioUrl }) {
   const [mode, setMode] = useState("library"); // "library" | "device"
   const [catalogTracks, setCatalogTracks] = useState([]);
@@ -40,6 +73,8 @@ export default function AudioMixer({ generatedAudioUrl }) {
   const [bgObjectUrl, setBgObjectUrl] = useState(null);
   const [mainVolume, setMainVolume] = useState(80);
   const [bgVolume, setBgVolume] = useState(40);
+  const [mainAudioStartOffset, setMainAudioStartOffset] = useState(0);
+  const [bgExtraAfterMain, setBgExtraAfterMain] = useState(3);
   const [isPlaying, setIsPlaying] = useState(false);
   const [exporting, setExporting] = useState(false);
 
@@ -49,6 +84,7 @@ export default function AudioMixer({ generatedAudioUrl }) {
   const mainGainRef = useRef(null);
   const bgGainRef = useRef(null);
   const fileInputRef = useRef(null);
+  const mainBufRef = useRef(null);
 
   useEffect(() => {
     base44.entities.BackgroundTrack.filter({ is_active: true }, "sort_order").then(setCatalogTracks);
@@ -93,6 +129,7 @@ export default function AudioMixer({ generatedAudioUrl }) {
       loadAudioBuffer(ctx, generatedAudioUrl),
       loadAudioBuffer(ctx, activeBgUrl),
     ]);
+    mainBufRef.current = mainBuf;
 
     const mainGain = ctx.createGain();
     mainGain.gain.value = mainVolume / 100;
@@ -114,17 +151,19 @@ export default function AudioMixer({ generatedAudioUrl }) {
     mainSourceRef.current = mainSrc;
     bgSourceRef.current = bgSrc;
 
-    mainSrc.start(0);
+    // BG starts immediately, main audio starts after offset
     bgSrc.start(0);
+    mainSrc.start(ctx.currentTime + mainAudioStartOffset);
     setIsPlaying(true);
 
     mainSrc.onended = () => {
       if (!audioCtxRef.current) return;
       const now = ctx.currentTime;
-      bgGain.gain.setValueAtTime(bgVolume / 100, now);
-      bgGain.gain.linearRampToValueAtTime(1.0, now + 1.0);
-      bgGain.gain.linearRampToValueAtTime(0, now + 2.0);
-      setTimeout(() => stopPlayback(), 2100);
+      const fadeStart = now;
+      const fadeDuration = Math.max(bgExtraAfterMain, 1);
+      bgGain.gain.setValueAtTime(bgVolume / 100, fadeStart);
+      bgGain.gain.linearRampToValueAtTime(0, fadeStart + fadeDuration);
+      setTimeout(() => stopPlayback(), (fadeDuration + 0.2) * 1000);
     };
   };
 
@@ -140,9 +179,10 @@ export default function AudioMixer({ generatedAudioUrl }) {
     await tmpCtx.close();
 
     const sampleRate = mainBuf.sampleRate;
-    const length = mainBuf.length;
-    const extraSamples = sampleRate * 2;
-    const totalLength = length + extraSamples;
+    const mainDuration = mainBuf.duration;
+    const totalDuration = mainAudioStartOffset + mainDuration + bgExtraAfterMain;
+    const totalLength = Math.ceil(totalDuration * sampleRate);
+
     const offlineCtx = new OfflineAudioContext(1, totalLength, sampleRate);
 
     const mainGain = offlineCtx.createGain();
@@ -150,10 +190,10 @@ export default function AudioMixer({ generatedAudioUrl }) {
     const bgGain = offlineCtx.createGain();
     bgGain.gain.value = bgVolume / 100;
 
-    const mainDuration = length / sampleRate;
-    bgGain.gain.setValueAtTime(bgVolume / 100, mainDuration);
-    bgGain.gain.linearRampToValueAtTime(1.0, mainDuration + 1.0);
-    bgGain.gain.linearRampToValueAtTime(0, mainDuration + 2.0);
+    // BG fade out starts after main ends, lasts bgExtraAfterMain seconds
+    const mainEndTime = mainAudioStartOffset + mainDuration;
+    bgGain.gain.setValueAtTime(bgVolume / 100, mainEndTime);
+    bgGain.gain.linearRampToValueAtTime(0, mainEndTime + bgExtraAfterMain);
 
     const bgData = bgBuf.getChannelData(0);
     const loopedBg = offlineCtx.createBuffer(1, totalLength, sampleRate);
@@ -168,8 +208,8 @@ export default function AudioMixer({ generatedAudioUrl }) {
     bgSrc.buffer = loopedBg;
     bgSrc.connect(bgGain).connect(offlineCtx.destination);
 
-    mainSrc.start(0);
     bgSrc.start(0);
+    mainSrc.start(mainAudioStartOffset);
 
     const rendered = await offlineCtx.startRendering();
     const wav = encodeWAV(rendered.getChannelData(0), sampleRate);
@@ -275,7 +315,7 @@ export default function AudioMixer({ generatedAudioUrl }) {
         </div>
       )}
 
-      {/* Volume BG + controls */}
+      {/* Volume BG + Timing Controls */}
       {hasBg && (
         <>
           <div className="mb-4">
@@ -288,6 +328,22 @@ export default function AudioMixer({ generatedAudioUrl }) {
             <input type="range" min="0" max="100" value={bgVolume}
               onChange={(e) => setBgVolume(Number(e.target.value))}
               className="w-full h-2 rounded-full accent-secondary cursor-pointer" />
+          </div>
+
+          {/* Timing Fields */}
+          <div className="flex gap-3 mb-4">
+            <TimingField
+              label="Início do áudio gerado"
+              icon={Timer}
+              value={mainAudioStartOffset}
+              onChange={setMainAudioStartOffset}
+            />
+            <TimingField
+              label="Trilha permanece após o áudio"
+              icon={Clock}
+              value={bgExtraAfterMain}
+              onChange={setBgExtraAfterMain}
+            />
           </div>
 
           <button
