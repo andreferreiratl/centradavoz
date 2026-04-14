@@ -10,8 +10,8 @@ export default function InstallAppBanner() {
   useEffect(() => {
     if (!isMobile()) return;
 
-    // Já dispensou antes?
-    if (localStorage.getItem("install_banner_dismissed")) return;
+    // Já instalou antes?
+    if (localStorage.getItem("app_installed")) return;
 
     // Captura o evento de instalação PWA (Android/Chrome)
     const handler = (e) => {
@@ -35,13 +35,16 @@ export default function InstallAppBanner() {
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === "accepted") dismiss();
+      if (outcome === "accepted") {
+        localStorage.setItem("app_installed", "1");
+        setShow(false);
+      }
     }
   };
 
   const dismiss = () => {
+    // Fechar sem instalar — aparece novamente no próximo login
     setShow(false);
-    localStorage.setItem("install_banner_dismissed", "1");
   };
 
   if (!show) return null;
