@@ -77,6 +77,24 @@ export default function GenerateAudio() {
     let generatedUrl = null;
     let errorMsg = null;
 
+    // Aplica o estilo de voz ao texto via IA antes de enviar para a API
+    let finalText = text;
+    const activeStyle = voiceStyles.find(s => s.id === selectedStyleId);
+    if (activeStyle?.description) {
+      const improved = await base44.integrations.Core.InvokeLLM({
+        prompt: `Você é um especialista em locução profissional. Reescreva o texto abaixo aplicando exatamente as seguintes instruções de estilo de voz:
+
+INSTRUÇÕES DE ESTILO:
+${activeStyle.description}
+
+TEXTO ORIGINAL:
+${text}
+
+Reescreva o texto mantendo 100% do conteúdo e significado original, mas ajustando a pontuação, ritmo, pausas (use "..." para pausas longas e vírgulas estratégicas), ênfases (use CAIXA ALTA para palavras que devem ser enfatizadas) e estrutura das frases para que o modelo TTS interprete corretamente o estilo desejado. Retorne APENAS o texto reescrito, sem explicações.`
+      });
+      if (improved && improved.trim()) finalText = improved.trim();
+    }
+
     try {
       const configs = await base44.entities.SystemConfig.filter({ key: "LMNT_API_KEY" });
       const apiKey = configs[0]?.value;
@@ -93,7 +111,7 @@ export default function GenerateAudio() {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            text,
+            text: finalText,
             voice: selectedVoice.voice_id,
             format: "mp3"
           })

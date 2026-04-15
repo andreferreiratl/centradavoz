@@ -44,14 +44,17 @@ export default function VoiceAssistant() {
       .join("\n");
 
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Você é um assistente especializado em definir estilos de locução de voz para geração de áudio com IA.
+      prompt: `Você é um assistente especializado em definir estilos de locução de voz para geração de áudio com IA (Text-to-Speech).
 
 Conversa até agora:
 ${conversationHistory}
 
-Com base na conversa, responda ao usuário de forma amigável e sugira um estilo de voz.
-Se tiver informações suficientes, retorne o estilo definido em JSON.
-Se precisar de mais detalhes, faça perguntas.
+Com base na conversa, responda ao usuário de forma amigável e ajude a definir o estilo de voz ideal.
+Se tiver informações suficientes, retorne o estilo definido em JSON com style_ready=true.
+Se precisar de mais detalhes, faça perguntas e retorne style_ready=false.
+
+IMPORTANTE: O campo "description" será usado como INSTRUÇÃO DIRETA para um modelo de TTS (Text-to-Speech) reprocessar o texto antes de enviar para a API de voz. Por isso, escreva a description como uma instrução de locutor detalhada e técnica, por exemplo:
+"Leia o texto com voz masculina grave e calorosa, ritmo lento e pausado, entonação séria e confiante, como um locutor profissional de comercial de TV. Use pausas dramáticas entre as frases. Transmita autoridade e credibilidade."
 
 Sempre responda em português brasileiro.`,
       response_json_schema: {
@@ -66,7 +69,7 @@ Sempre responda em português brasileiro.`,
               rhythm: { type: "string" },
               emotion: { type: "string" },
               style: { type: "string" },
-              description: { type: "string" }
+              description: { type: "string", description: "Instrução técnica de locução para o modelo TTS reprocessar o texto" }
             }
           }
         }
