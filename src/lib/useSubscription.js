@@ -18,7 +18,6 @@ export function useSubscription() {
         );
         if (subs.length > 0) {
           const sub = subs[0];
-          // Check if expired
           if (sub.expiration_date && new Date(sub.expiration_date) < new Date()) {
             await base44.entities.Subscription.update(sub.id, { status: "expired" });
             sub.status = "expired";
@@ -35,7 +34,7 @@ export function useSubscription() {
   }, []);
 
   const isActive = subscription?.status === "active";
-  const remainingChars = subscription ? subscription.character_limit - (subscription.characters_used || 0) : 0;
+  const remainingAudios = subscription ? subscription.audio_limit - (subscription.audios_used || 0) : 0;
 
-  return { subscription, loading, user, isActive, remainingChars, setSubscription };
+  return { subscription, loading, user, isActive, remainingAudios, setSubscription };
 }

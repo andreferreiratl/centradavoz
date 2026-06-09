@@ -67,7 +67,7 @@ export default function Plans() {
             </div>
             
             <p className="text-xs text-secondary mb-4">
-              {plan.character_limit?.toLocaleString()} caracteres
+              {plan.audio_limit?.toLocaleString()} áudio{plan.audio_limit !== 1 ? "s" : ""}
             </p>
 
             <div className="space-y-2 mb-5">

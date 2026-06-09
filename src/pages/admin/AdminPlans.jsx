@@ -14,7 +14,7 @@ export default function AdminPlans() {
   const [dialog, setDialog] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
   const [form, setForm] = useState({
-    name: "", price: "", character_limit: "", duration_days: "30",
+    name: "", price: "", audio_limit: "", duration_days: "30",
     duration_label: "mensal", benefits: "", payment_link: "", is_active: true, sort_order: 0,
   });
 
@@ -28,7 +28,7 @@ export default function AdminPlans() {
 
   const openNew = () => {
     setEditingPlan(null);
-    setForm({ name: "", price: "", character_limit: "", duration_days: "30", duration_label: "mensal", benefits: "", payment_link: "", is_active: true, sort_order: 0 });
+    setForm({ name: "", price: "", audio_limit: "", duration_days: "30", duration_label: "mensal", benefits: "", payment_link: "", is_active: true, sort_order: 0 });
     setDialog(true);
   };
 
@@ -37,7 +37,7 @@ export default function AdminPlans() {
     setForm({
       name: plan.name,
       price: plan.price,
-      character_limit: plan.character_limit,
+      audio_limit: plan.audio_limit,
       duration_days: plan.duration_days,
       duration_label: plan.duration_label || "mensal",
       benefits: (plan.benefits || []).join("\n"),
@@ -52,7 +52,7 @@ export default function AdminPlans() {
     const data = {
       name: form.name,
       price: Number(form.price),
-      character_limit: Number(form.character_limit),
+      audio_limit: Number(form.audio_limit),
       duration_days: Number(form.duration_days),
       duration_label: form.duration_label,
       benefits: form.benefits.split("\n").filter(b => b.trim()),
@@ -109,7 +109,7 @@ export default function AdminPlans() {
                 </div>
                 <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
                   <span>R${plan.price?.toFixed(2)}</span>
-                  <span>{plan.character_limit?.toLocaleString()} chars</span>
+                  <span>{plan.audio_limit?.toLocaleString()} áudios</span>
                   <span>{plan.duration_days} dias</span>
                 </div>
                 {plan.payment_link && (
@@ -152,8 +152,8 @@ export default function AdminPlans() {
                 <Input type="number" value={form.price} onChange={(e) => setForm(f => ({ ...f, price: e.target.value }))} className="bg-muted border-border" />
               </div>
               <div>
-                <Label className="text-xs">Limite Caracteres</Label>
-                <Input type="number" value={form.character_limit} onChange={(e) => setForm(f => ({ ...f, character_limit: e.target.value }))} className="bg-muted border-border" />
+                <Label className="text-xs">Limite de Áudios</Label>
+                <Input type="number" value={form.audio_limit} onChange={(e) => setForm(f => ({ ...f, audio_limit: e.target.value }))} className="bg-muted border-border" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">

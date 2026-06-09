@@ -10,7 +10,7 @@ import StatusBadge from "../components/StatusBadge";
 import { Progress } from "@/components/ui/progress";
 
 export default function Dashboard() {
-  const { subscription, loading, user, isActive, remainingChars } = useSubscription();
+  const { subscription, loading, user, isActive, remainingAudios } = useSubscription();
   const [audioCount, setAudioCount] = useState(0);
   useEffect(() => {
     async function loadAudios() {
@@ -30,7 +30,7 @@ export default function Dashboard() {
   }
 
   const usagePercent = subscription
-    ? Math.min(100, ((subscription.characters_used || 0) / subscription.character_limit) * 100)
+    ? Math.min(100, ((subscription.audios_used || 0) / subscription.audio_limit) * 100)
     : 0;
 
   return (
@@ -72,8 +72,8 @@ export default function Dashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3 mb-6">
         <StatCard icon={AudioLines} label="Áudios Criados" value={audioCount} />
-        <StatCard icon={FileText} label="Caracteres Usados" value={(subscription?.characters_used || 0).toLocaleString()} glowColor="secondary" />
-        <StatCard icon={Zap} label="Limite Disponível" value={remainingChars.toLocaleString()} />
+        <StatCard icon={FileText} label="Créditos Usados" value={(subscription?.audios_used || 0).toLocaleString()} glowColor="secondary" />
+        <StatCard icon={Zap} label="Créditos Restantes" value={remainingAudios.toLocaleString()} />
         <StatCard icon={CreditCard} label="Plano Atual" value={subscription?.plan_name || "Nenhum"} glowColor="secondary" />
       </div>
 
@@ -81,13 +81,13 @@ export default function Dashboard() {
       {subscription && (
         <div className="glass-card rounded-2xl p-4 mb-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Uso de Caracteres</span>
+            <span className="text-sm font-medium">Uso de Créditos de Áudio</span>
             <span className="text-xs text-muted-foreground">{usagePercent.toFixed(0)}%</span>
           </div>
           <Progress value={usagePercent} className="h-2 bg-muted [&>[data-state=complete]]:gradient-primary [&>div]:gradient-primary" />
           <div className="flex items-center justify-between mt-2">
-            <span className="text-xs text-muted-foreground">{(subscription.characters_used || 0).toLocaleString()} usados</span>
-            <span className="text-xs text-muted-foreground">{subscription.character_limit.toLocaleString()} total</span>
+            <span className="text-xs text-muted-foreground">{(subscription.audios_used || 0).toLocaleString()} usados</span>
+            <span className="text-xs text-muted-foreground">{subscription.audio_limit.toLocaleString()} total</span>
           </div>
           <div className="mt-3 flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Status:</span>

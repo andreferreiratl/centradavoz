@@ -10,9 +10,9 @@
       "type": "number",
       "title": "Pre\u00e7o"
     },
-    "character_limit": {
+    "audio_limit": {
       "type": "number",
-      "title": "Limite de Caracteres"
+      "title": "Limite de \u00c1udios"
     },
     "duration_days": {
       "type": "number",
@@ -53,7 +53,7 @@
   "required": [
     "name",
     "price",
-    "character_limit",
+    "audio_limit",
     "duration_days"
   ]
 }

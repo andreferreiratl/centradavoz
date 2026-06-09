@@ -8,7 +8,7 @@ import AudioMixer from "../components/AudioMixer";
 import { cn } from "@/lib/utils";
 
 export default function GenerateAudio() {
-  const { subscription, loading, user, isActive, remainingChars, setSubscription } = useSubscription();
+  const { subscription, loading, user, isActive, remainingAudios, setSubscription } = useSubscription();
   const [voices, setVoices] = useState([]);
   const [voiceStyles, setVoiceStyles] = useState([]);
   const [selectedVoiceId, setSelectedVoiceId] = useState("");
@@ -35,6 +35,7 @@ export default function GenerateAudio() {
 
   const selectedVoice = voices.find((v) => v.id === selectedVoiceId) || null;
   const charCount = text.length;
+  const canGenerate = isActive && remainingAudios > 0;
 
   function toggleGenerated() {
     const audio = generatedAudioRef.current;
@@ -58,7 +59,7 @@ export default function GenerateAudio() {
   };
 
   const handleGenerate = async () => {
-    if (!isActive || charCount === 0 || charCount > remainingChars || !selectedVoice) return;
+    if (!canGenerate || charCount === 0 || !selectedVoice) return;
     setGenerating(true);
     setAudioUrl(null);
     setAudioPlaying(false);
@@ -146,9 +147,9 @@ Reescreva o texto mantendo 100% do conteúdo e significado original, mas ajustan
       errorMsg = "Erro ao conectar com a API LMNT. Verifique a chave e o Voice ID.";
     }
 
-    const newUsage = (subscription.characters_used || 0) + charCount;
-    await base44.entities.Subscription.update(subscription.id, { characters_used: newUsage });
-    setSubscription((prev) => ({ ...prev, characters_used: newUsage }));
+    const newUsage = (subscription.audios_used || 0) + 1;
+    await base44.entities.Subscription.update(subscription.id, { audios_used: newUsage });
+    setSubscription((prev) => ({ ...prev, audios_used: newUsage }));
 
     await base44.entities.AudioRecord.update(record.id, {
       status: generatedUrl ? "completed" : "failed",
@@ -203,13 +204,15 @@ Reescreva o texto mantendo 100% do conteúdo e significado original, mas ajustan
       </div>
 
       {/* Access Warning */}
-      {!isActive &&
+      {(!isActive || remainingAudios <= 0) &&
       <div className="glass-card rounded-2xl p-4 mb-4 border-yellow-500/30 bg-yellow-500/5">
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-semibold text-yellow-400">Acesso Restrito</p>
-              <p className="text-xs text-muted-foreground mt-1">Você precisa de um plano ativo para gerar locuções.</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                  {!isActive ? "Você precisa de um plano ativo para gerar locuções." : "Seus créditos de áudio acabaram."}
+                </p>
               <Link to="/plans"><GradientButton size="sm" className="font-heading font-semibold rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none px-4 py-2 text-sm gradient-primary hover:gradient-primary-hover text-white glow-primary mt-2">Ver Planos</GradientButton></Link>
             </div>
           </div>
@@ -268,8 +271,8 @@ Reescreva o texto mantendo 100% do conteúdo e significado original, mas ajustan
         <div className="flex items-center justify-between mb-3">
           <span className="font-heading font-semibold text-base">Roteiro / Texto</span>
           <div className="flex items-center gap-2">
-            <span className={cn("text-xs font-medium", charCount > remainingChars ? "text-red-400" : "text-muted-foreground")}>
-              {charCount.toLocaleString()} / {remainingChars.toLocaleString()} CARACTERES
+            <span className={cn("text-xs font-medium", remainingAudios <= 0 ? "text-red-400" : "text-muted-foreground")}>
+              {remainingAudios} crédito{remainingAudios !== 1 ? "s" : ""} restante{remainingAudios !== 1 ? "s" : ""}
             </span>
             <button
               onClick={handleImproveText}
@@ -294,7 +297,7 @@ Reescreva o texto mantendo 100% do conteúdo e significado original, mas ajustan
       {/* Gerar Áudio Button */}
       <GradientButton
         onClick={handleGenerate}
-        disabled={!isActive || charCount === 0 || charCount > remainingChars || generating || !selectedVoice}
+        disabled={!canGenerate || charCount === 0 || generating || !selectedVoice}
         className={cn("w-full mb-4", generating && "animate-pulse-glow")}
         size="lg">
         

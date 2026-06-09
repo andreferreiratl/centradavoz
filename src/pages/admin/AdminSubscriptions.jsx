@@ -26,7 +26,7 @@ export default function AdminSubscriptions() {
     await base44.entities.Subscription.update(sub.id, {
       status: "active",
       expiration_date: newExpiry.toISOString(),
-      characters_used: 0,
+      audios_used: 0,
     });
     setLoading(true);
     await loadSubs();
@@ -65,8 +65,8 @@ export default function AdminSubscriptions() {
       </div>
       <div className="grid grid-cols-2 gap-2 mt-3 text-xs text-muted-foreground">
         <span>Plano: {sub.plan_name || "—"}</span>
-        <span>Limite: {sub.character_limit?.toLocaleString()}</span>
-        <span>Usado: {(sub.characters_used || 0).toLocaleString()}</span>
+        <span>Limite: {sub.audio_limit?.toLocaleString()} áudios</span>
+        <span>Usado: {(sub.audios_used || 0).toLocaleString()} áudios</span>
         <span>Expira: {sub.expiration_date ? moment(sub.expiration_date).format("DD/MM/YYYY") : "—"}</span>
       </div>
       <div className="flex items-center gap-2 mt-3">

@@ -29,13 +29,13 @@
       ],
       "default": "active"
     },
-    "character_limit": {
+    "audio_limit": {
       "type": "number",
-      "title": "Limite de Caracteres"
+      "title": "Limite de \u00c1udios"
     },
-    "characters_used": {
+    "audios_used": {
       "type": "number",
-      "title": "Caracteres Utilizados",
+      "title": "\u00c1udios Utilizados",
       "default": 0
     },
     "start_date": {
@@ -57,6 +57,6 @@
     "user_email",
     "plan_id",
     "status",
-    "character_limit"
+    "audio_limit"
   ]
 }
